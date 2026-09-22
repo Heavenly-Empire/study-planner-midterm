@@ -1,0 +1,27 @@
+:root { font-family: Arial, sans-serif; color: #17243a; background: #f5f8fc; line-height: 1.5; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, textarea { font: inherit; }
+button { border: 0; border-radius: 8px; padding: 0.75rem 1rem; background: #2457a6; color: white; cursor: pointer; }
+button:hover { background: #194482; }
+.button-secondary { background: #e7edf6; color: #17243a; }
+.button-secondary:hover { background: #d4e0ef; }
+.text-button { padding: 0; background: transparent; color: #2457a6; }
+.text-button:hover { background: transparent; text-decoration: underline; }
+input, textarea { width: 100%; padding: 0.75rem; border: 1px solid #bfcbda; border-radius: 8px; background: white; }
+label { display: block; margin-top: 0.8rem; font-weight: 700; }
+h1, h2, h3, p { margin-top: 0; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; font-weight: 700; color: #2457a6; }
+.app-shell { max-width: 1040px; padding: 2rem 1rem 4rem; margin: auto; }
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid #d8e2ee; }
+.app-header h1 { margin-bottom: 0; }
+.header-user { display: flex; align-items: center; gap: 0.75rem; }
+.role-pill { background: #e5efff; padding: 0.3rem 0.7rem; border-radius: 99px; font-size: 0.8rem; font-weight: 700; }
+.page-heading { margin: 1.25rem 0 1.5rem; }
+.menu-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.login-panel { max-width: 420px; margin: 10vh auto; background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 30px #17243a12; }
+.login-panel form button { margin-top: 1rem; width: 100%; }
+.error { color: #aa2438; }
+.task-form { max-width: 600px; padding: 1.5rem; background: white; border: 1px solid #d8e2ee; border-radius: 12px; }
+.task-form button { margin-top: 1rem; }
+@media (max-width: 600px) { .app-header, .header-user { align-items: flex-start; flex-direction: column; } }
