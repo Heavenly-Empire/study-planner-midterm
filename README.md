@@ -26,12 +26,14 @@ Allowed pages are `menu`, `dashboard`, and `form`. Login is shown automatically 
 
 ## Team workflow
 
-1. Member 1 provides the shared skeleton on `main`.
+1. The shared skeleton and Member 3 dashboard are already on `main`.
 2. Each member works on their own branch (`member-1-login`, `member-2-menu`, `member-3-dashboard`, `member-4-form`).
 3. Make small commits that represent working steps. Open a pull request and ask another member to review before merge.
 4. Member 2 sets the correct Vite `base` for the repository name and deploys to GitHub Pages after the combined app passes the demo flow.
 
 The initial Login, Menu, and TaskForm are scaffolds for their owners to refine. Member 3 owns the complete Dashboard and its sample data.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the exact branch, commit, and pull request steps. The repository is public so teammates can fork it and open pull requests now. Direct pushes require the repository owner to invite their GitHub usernames as collaborators later.
 
 ## Dashboard behavior (Member 3)
 

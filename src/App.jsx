@@ -30,7 +30,6 @@ export default function App() {
   function handleLogout() {
     setCurrentUser(null);
     setCurrentPage('menu');
-    setTasks(initialTasks);
   }
 
   function handleAddTask(task) {
