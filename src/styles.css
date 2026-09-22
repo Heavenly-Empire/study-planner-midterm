@@ -25,3 +25,23 @@ h1, h2, h3, p { margin-top: 0; }
 .task-form { max-width: 600px; padding: 1.5rem; background: white; border: 1px solid #d8e2ee; border-radius: 12px; }
 .task-form button { margin-top: 1rem; }
 @media (max-width: 600px) { .app-header, .header-user { align-items: flex-start; flex-direction: column; } }
+
+/* Member 3: dashboard styles. Other members should keep their CSS class names separate. */
+.dashboard-page { max-width: 900px; }
+.dashboard-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 2rem; }
+.dashboard-summary-card { min-width: 180px; flex: 1; padding: 1.2rem 1.4rem; background: #e7f0ff; border-radius: 12px; }
+.dashboard-summary-card span { display: block; color: #4d5f78; font-size: 0.9rem; }
+.dashboard-summary-card strong { display: block; margin-top: 0.2rem; font-size: 2rem; line-height: 1.1; }
+.dashboard-list-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.dashboard-list-heading h3 { margin: 0; }
+.dashboard-task-list { display: grid; gap: 0.9rem; }
+.dashboard-task-card, .dashboard-empty { padding: 1.2rem 1.4rem; background: white; border: 1px solid #d8e2ee; border-radius: 12px; }
+.dashboard-task-topline { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: #5a6676; font-size: 0.82rem; }
+.dashboard-task-card h3 { margin: 0.75rem 0 0.15rem; font-size: 1.1rem; }
+.dashboard-course { margin-bottom: 0.5rem; color: #2457a6; font-weight: 700; }
+.dashboard-notes { margin-bottom: 0; color: #5a6676; }
+.dashboard-scope { padding: 0.22rem 0.6rem; border-radius: 99px; font-weight: 700; }
+.dashboard-scope-class { color: #155c44; background: #ddf5e9; }
+.dashboard-scope-personal { color: #744c13; background: #fff0cf; }
+.dashboard-empty p { margin-bottom: 0; }
+@media (max-width: 600px) { .dashboard-list-heading { align-items: flex-start; flex-direction: column; } }

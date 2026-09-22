@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --configLoader native",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node src/data/selectTasks.test.js"
   },
   "dependencies": {
     "react": "^19.2.8",

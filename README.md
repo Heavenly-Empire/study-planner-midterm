@@ -32,3 +32,14 @@ Allowed pages are `menu`, `dashboard`, and `form`. Login is shown automatically 
 4. Member 2 sets the correct Vite `base` for the repository name and deploys to GitHub Pages after the combined app passes the demo flow.
 
 The initial Login, Menu, and TaskForm are scaffolds for their owners to refine. Member 3 owns the complete Dashboard and its sample data.
+
+## Dashboard behavior (Member 3)
+
+The dashboard's visibility rule lives in `src/data/selectTasks.js`:
+
+- Lecturer sees only class tasks.
+- Student sees class tasks plus personal tasks with their own `ownerId`.
+- The visible list is sorted by due date. The summary counts use that same visible list.
+- With no visible tasks, the page shows an empty message and an Add study task button.
+
+Run `npm test` for the role-filtering checks and `npm run build` before merging dashboard changes. The build uses Vite's native config loader so it also works in this Windows workspace.
