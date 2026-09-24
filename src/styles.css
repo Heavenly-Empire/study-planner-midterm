@@ -26,6 +26,9 @@ h1, h2, h3, p { margin-top: 0; }
 .task-form button { margin-top: 1rem; }
 @media (max-width: 600px) { .app-header, .header-user { align-items: flex-start; flex-direction: column; } }
 
+/* Member 2: menu styles. */
+.role-badge { display: inline-block; padding: 0.3rem 0.7rem; border-radius: 99px; background: #e5efff; color: #2457a6; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; }
+
 /* Member 3: dashboard styles. Other members should keep their CSS class names separate. */
 .dashboard-page { max-width: 900px; }
 .dashboard-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.5rem 0 2rem; }
