@@ -1,6 +1,6 @@
 // Member 2 handoff: develop this into the dedicated menu page and prepare deployment.
 export default function Menu({ currentUser, onNavigate, onLogout }) {
-  const isLecturer = currentUser.role === 'Lecturer';
+  const isLecturer = currentUser.role === 'administrator';
 
   return (
     <main>
@@ -10,7 +10,7 @@ export default function Menu({ currentUser, onNavigate, onLogout }) {
         <p className="role-badge">{currentUser.role}</p>
         <p>
           {isLecturer
-            ? 'Lecturer posts class tasks.'
+            ? 'Administrator posts class tasks.'
             : 'Student plans personal tasks.'}
         </p>
       </div>
