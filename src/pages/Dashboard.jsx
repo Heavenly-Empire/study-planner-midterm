@@ -1,4 +1,3 @@
-import NavBar from '../components/NavBar';
 import TaskCard from '../components/TaskCard.jsx';
 import { getVisibleTasks } from '../data/selectTasks.js';
 
