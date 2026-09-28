@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 // Receives currentUser and onAddTask(task) from App.jsx via props.
 function TaskForm({ currentUser, onAddTask }) {
@@ -9,6 +10,7 @@ function TaskForm({ currentUser, onAddTask }) {
   const [notes, setNotes] = useState("");
 
   const [errors, setErrors] = useState({});
+  const [submittedTask, setSubmittedTask] = useState(null);
 
   function handleSubmit(e) {
     e.preventDefault(); // stop the browser's default full-page form submit
@@ -22,10 +24,20 @@ function TaskForm({ currentUser, onAddTask }) {
     // Invalid input: show errors, keep typed values, add nothing, stay on the form.
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSubmittedTask(null);
       return; // early return — nothing is added
     }
 
     setErrors({});
+
+    // Temporary preview object, not yet the real task shape (that's step 4).
+    const preview = { title: title.trim(), course: course.trim(), dueDate, notes: notes.trim() };
+    setSubmittedTask(preview);
+
+    setTitle("");
+    setCourse("");
+    setDueDate("");
+    setNotes("");
   }
 
   return (
@@ -71,6 +83,28 @@ function TaskForm({ currentUser, onAddTask }) {
           Add activity
         </button>
       </form>
+
+      {submittedTask && (
+        <div className="card output-panel">
+          <h2>Submitted</h2>
+          <dl className="profile-list">
+            <dt>Title</dt>
+            <dd>{submittedTask.title}</dd>
+
+            <dt>Course</dt>
+            <dd>{submittedTask.course}</dd>
+
+            <dt>Due date</dt>
+            <dd>{submittedTask.dueDate}</dd>
+
+            <dt>Notes</dt>
+            <dd>{submittedTask.notes || "—"}</dd>
+          </dl>
+          <Link to="/dashboard" className="btn">
+            Go to Dashboard
+          </Link>
+        </div>
+      )}
     </main>
   );
 }
