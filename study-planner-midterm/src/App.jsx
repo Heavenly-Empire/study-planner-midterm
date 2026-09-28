@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { findDemoUser } from './data/users'
-// Member 3: provide the hardcoded activities to the shared App state.
+import Navigation from './components/Navigation.jsx'
 import { initialTasks } from './data/tasks.js'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
