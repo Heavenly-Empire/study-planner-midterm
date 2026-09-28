@@ -12,6 +12,8 @@ function TaskForm({ currentUser, onAddTask }) {
   const [errors, setErrors] = useState({});
   const [submittedTask, setSubmittedTask] = useState(null);
 
+  const isLecturer = currentUser.role === "administrator";
+
   function handleSubmit(e) {
     e.preventDefault(); // stop the browser's default full-page form submit
 
@@ -30,9 +32,19 @@ function TaskForm({ currentUser, onAddTask }) {
 
     setErrors({});
 
-    // Temporary preview object, not yet the real task shape (that's step 4).
-    const preview = { title: title.trim(), course: course.trim(), dueDate, notes: notes.trim() };
-    setSubmittedTask(preview);
+    // Real task object, matching the shared contract exactly.
+    const newTask = {
+      id: Date.now(),
+      title: title.trim(),
+      course: course.trim(),
+      dueDate,
+      notes: notes.trim(),
+      scope: isLecturer ? "class" : "personal",
+      ownerId: currentUser.id,
+    };
+
+    onAddTask(newTask); // lift the task to App.jsx once
+    setSubmittedTask(newTask);
 
     setTitle("");
     setCourse("");
@@ -99,6 +111,9 @@ function TaskForm({ currentUser, onAddTask }) {
 
             <dt>Notes</dt>
             <dd>{submittedTask.notes || "—"}</dd>
+
+            <dt>Visibility</dt>
+            <dd>{submittedTask.scope === "class" ? "Class (everyone)" : "Personal (only you)"}</dd>
           </dl>
           <Link to="/dashboard" className="btn">
             Go to Dashboard
