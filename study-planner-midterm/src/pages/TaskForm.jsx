@@ -8,8 +8,24 @@ function TaskForm({ currentUser, onAddTask }) {
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [errors, setErrors] = useState({});
+
   function handleSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); // stop the browser's default full-page form submit
+
+    // Build field errors for blank title, course, or due date.
+    const newErrors = {};
+    if (!title.trim()) newErrors.title = "Title is required.";
+    if (!course.trim()) newErrors.course = "Course is required.";
+    if (!dueDate.trim()) newErrors.dueDate = "Due date is required.";
+
+    // Invalid input: show errors, keep typed values, add nothing, stay on the form.
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return; // early return — nothing is added
+    }
+
+    setErrors({});
   }
 
   return (
@@ -24,6 +40,7 @@ function TaskForm({ currentUser, onAddTask }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+        {errors.title && <p className="field-error">{errors.title}</p>}
 
         <label htmlFor="course">Course</label>
         <input
@@ -32,6 +49,7 @@ function TaskForm({ currentUser, onAddTask }) {
           value={course}
           onChange={(e) => setCourse(e.target.value)}
         />
+        {errors.course && <p className="field-error">{errors.course}</p>}
 
         <label htmlFor="dueDate">Due date</label>
         <input
@@ -40,6 +58,7 @@ function TaskForm({ currentUser, onAddTask }) {
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
+        {errors.dueDate && <p className="field-error">{errors.dueDate}</p>}
 
         <label htmlFor="notes">Notes (optional)</label>
         <textarea
