@@ -1,8 +1,14 @@
-// Member 3: build the dashboard from App's task and user props.
+// Member 3: build the role-filtered dashboard from App's task and user props.
+import { Link } from 'react-router-dom'
 import TaskCard from '../components/TaskCard.jsx'
+import { getVisibleTasks } from '../data/selectTasks.js'
 
 export default function Dashboard({ currentUser, tasks }) {
+  // visibleTasks is calculated from props, so Dashboard does not keep a second copy in state.
+  const visibleTasks = getVisibleTasks(tasks, currentUser)
   const isLecturer = currentUser.role === 'administrator'
+  const classCount = visibleTasks.filter((task) => task.scope === 'class').length
+  const personalCount = visibleTasks.filter((task) => task.scope === 'personal').length
 
   return (
     <main className="page">
@@ -15,17 +21,27 @@ export default function Dashboard({ currentUser, tasks }) {
 
       <section className="card" aria-labelledby="task-summary-heading">
         <h2 id="task-summary-heading">Activity summary</h2>
-        <p><strong>Loaded activities:</strong> {tasks.length}</p>
+        <p><strong>Class activities:</strong> {classCount}</p>
+        {!isLecturer && <p><strong>Personal activities:</strong> {personalCount}</p>}
+        <p><strong>Total visible:</strong> {visibleTasks.length}</p>
       </section>
 
       <section aria-labelledby="upcoming-heading">
         <h2 id="upcoming-heading">Upcoming activities</h2>
-        <div style={{ display: 'grid', gap: '16px' }}>
-          {/* The id stays with its activity, which gives React a stable key. */}
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
-        </div>
+        {visibleTasks.length === 0 ? (
+          <div className="card">
+            <h3>No activities yet</h3>
+            <p>Add an activity to start building the study plan.</p>
+            <Link className="btn" to="/form">Add study activity</Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '16px' }}>
+            {/* The id stays with its activity, which gives React a stable key. */}
+            {visibleTasks.map((task) => (
+              <TaskCard key={task.id} task={task} />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   )
