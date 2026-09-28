@@ -16,15 +16,11 @@ function ProtectedLayout({ currentUser, onLogout }) {
 
   return (
     <div>
-      <header style={{ padding: '10px', background: '#eee', marginBottom: '20px' }}>
-        <span>Signed in as: <strong>{currentUser.name}</strong> </span>
-        <button onClick={onLogout} style={{ marginLeft: '10px' }}>Logout</button>
-      </header>
+      <Navigation currentUser={currentUser} onLogout={onLogout} />
       <Outlet />
     </div>
   )
 }
-
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null)
   // Member 3: App keeps one task list as the single source of truth for every route.
