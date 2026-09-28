@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { findDemoUser } from './data/users'
+// Member 3: provide the hardcoded activities to the shared App state.
+import { initialTasks } from './data/tasks.js'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
@@ -25,7 +27,8 @@ function ProtectedLayout({ currentUser, onLogout }) {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null)
-  const [tasks, setTasks] = useState([])
+  // Member 3: App keeps one task list as the single source of truth for every route.
+  const [tasks, setTasks] = useState(initialTasks)
   const navigate = useNavigate()
 
   const handleLogin = (username, password) => {
