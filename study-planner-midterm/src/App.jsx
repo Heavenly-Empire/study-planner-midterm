@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { findDemoUser } from './data/users'
 import Navigation from './components/Navigation.jsx'
-import { initialTasks } from './data/tasks.js'
+import { loadInitialTasks } from './data/tasks.js'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
@@ -23,9 +23,65 @@ function ProtectedLayout({ currentUser, onLogout }) {
 }
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null)
-  // Member 3: App keeps one task list as the single source of truth for every route.
-  const [tasks, setTasks] = useState(initialTasks)
+  // App keeps one task state as the single source of truth for every route.
+  const [taskState, setTaskState] = useState({
+    status: 'loading',
+    tasks: [],
+    error: '',
+  })
   const navigate = useNavigate()
+
+  const requestTasks = useCallback(() => {
+    const demoOptions = new URLSearchParams(window.location.search)
+
+    return loadInitialTasks({
+      simulateEmpty: demoOptions.get('demo-state') === 'empty',
+      simulateError: demoOptions.get('demo-state') === 'error',
+    })
+  }, [])
+
+  useEffect(() => {
+    let isActive = true
+
+    requestTasks()
+      .then((tasks) => {
+        if (isActive) {
+          setTaskState({ status: 'ready', tasks, error: '' })
+        }
+      })
+      .catch((error) => {
+        if (isActive) {
+          setTaskState({
+            status: 'error',
+            tasks: [],
+            error: error instanceof Error ? error.message : 'The activity data could not be loaded.',
+          })
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [requestTasks])
+
+  const handleTaskRetry = () => {
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.delete('demo-state')
+    window.history.replaceState(null, '', currentUrl)
+
+    setTaskState({ status: 'loading', tasks: [], error: '' })
+    requestTasks()
+      .then((tasks) => {
+        setTaskState({ status: 'ready', tasks, error: '' })
+      })
+      .catch((error) => {
+        setTaskState({
+          status: 'error',
+          tasks: [],
+          error: error instanceof Error ? error.message : 'The activity data could not be loaded.',
+        })
+      })
+  }
 
   const handleLogin = (username, password) => {
     const user = findDemoUser(username, password)
@@ -43,7 +99,11 @@ export default function App() {
   }
 
   const handleAddTask = (newTask) => {
-    setTasks((prevTasks) => [...prevTasks, newTask])
+    setTaskState((previous) => ({
+      status: 'ready',
+      tasks: [...previous.tasks, newTask],
+      error: '',
+    }))
   }
 
   return (
@@ -58,7 +118,15 @@ export default function App() {
       <Route element={<ProtectedLayout currentUser={currentUser} onLogout={handleLogout} />}>
         <Route
           path="/dashboard"
-          element={<Dashboard currentUser={currentUser} tasks={tasks} />}
+          element={
+            <Dashboard
+              currentUser={currentUser}
+              tasks={taskState.tasks}
+              status={taskState.status}
+              error={taskState.error}
+              onRetry={handleTaskRetry}
+            />
+          }
         />
         <Route
           path="/profile"
