@@ -3,7 +3,31 @@ import { Link } from 'react-router-dom'
 import TaskCard from '../components/TaskCard.jsx'
 import { getVisibleTasks } from '../data/selectTasks.js'
 
-export default function Dashboard({ currentUser, tasks }) {
+export default function Dashboard({ currentUser, tasks, status, error, onRetry }) {
+  if (status === 'loading') {
+    return (
+      <main className="page" aria-live="polite">
+        <h1>Loading study plan</h1>
+        <div className="card state-panel">
+          <span className="loading-indicator" aria-hidden="true" />
+          <p>Preparing the latest study activities…</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (status === 'error') {
+    return (
+      <main className="page" aria-live="assertive">
+        <h1>Unable to load activities</h1>
+        <div className="card state-panel">
+          <p>{error}</p>
+          <button type="button" onClick={onRetry}>Try again</button>
+        </div>
+      </main>
+    )
+  }
+
   // visibleTasks is calculated from props, so Dashboard does not keep a second copy in state.
   const visibleTasks = getVisibleTasks(tasks, currentUser)
   const isLecturer = currentUser.role === 'administrator'
