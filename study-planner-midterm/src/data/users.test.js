@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findDemoUser, demoUsers } from './users'
+import { findDemoUser } from './users'
 
 describe('findDemoUser credential matching', () => {
   it('returns correct lecturer user object when valid credentials are given', () => {

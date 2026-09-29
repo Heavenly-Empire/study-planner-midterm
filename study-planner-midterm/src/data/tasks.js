@@ -37,3 +37,23 @@ export const initialTasks = [
     ownerId: 'usr_student_02',
   },
 ]
+
+// Keep the midterm data local while still exercising the loading, empty, and error states
+// that a real API-backed version would need. The returned array is copied so callers do
+// not accidentally mutate the shared examples.
+export function loadInitialTasks({
+  simulateEmpty = false,
+  simulateError = false,
+  delay = 350,
+} = {}) {
+  return new Promise((resolve, reject) => {
+    globalThis.setTimeout(() => {
+      if (simulateError) {
+        reject(new Error('The activity data could not be loaded. Please try again.'))
+        return
+      }
+
+      resolve(simulateEmpty ? [] : initialTasks.map((task) => ({ ...task })))
+    }, delay)
+  })
+}
