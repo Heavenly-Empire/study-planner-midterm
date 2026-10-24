@@ -1,4 +1,4 @@
-// Member 3: these examples return after a refresh because this project does not use a database.
+// Midterm examples retained only as visibility test fixtures. Runtime data comes from the API.
 export const initialTasks = [
   {
     id: 'task_class_react_review',
@@ -38,22 +38,3 @@ export const initialTasks = [
   },
 ]
 
-// Keep the midterm data local while still exercising the loading, empty, and error states
-// that a real API-backed version would need. The returned array is copied so callers do
-// not accidentally mutate the shared examples.
-export function loadInitialTasks({
-  simulateEmpty = false,
-  simulateError = false,
-  delay = 350,
-} = {}) {
-  return new Promise((resolve, reject) => {
-    globalThis.setTimeout(() => {
-      if (simulateError) {
-        reject(new Error('The activity data could not be loaded. Please try again.'))
-        return
-      }
-
-      resolve(simulateEmpty ? [] : initialTasks.map((task) => ({ ...task })))
-    }, delay)
-  })
-}

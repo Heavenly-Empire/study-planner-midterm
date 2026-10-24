@@ -112,3 +112,20 @@ textarea:focus-visible {
   .page { margin: 12px auto; padding: 0 12px; }
   .card { padding: 14px; }
 }
+
+/* Week 10 forms and activity actions */
+.login-page { max-width: 520px; }
+button:disabled { opacity: .65; cursor: wait; }
+form button { margin-top: 18px; margin-right: 8px; }
+.secondary { background: #475569; }
+.danger { background: #a52b2b; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-block; text-decoration: none; }
+.field-error { color: #a12020; font-weight: bold; }
+.output-panel { margin-top: 20px; }
+.card { margin-bottom: 20px; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .nav { align-items: stretch; padding: 12px; }
+  .nav-links { flex-wrap: wrap; }
+  .nav-user { flex-wrap: wrap; }
+}

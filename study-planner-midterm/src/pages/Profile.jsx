@@ -1,35 +1,22 @@
-function Profile({ currentUser }) {
-  const isLecturer = currentUser.role === "administrator";
-  const roleLabel = isLecturer ? "Lecturer" : "Student";
+import { useState } from 'react'
+import { api } from '../api.js'
 
-  const canCreate = isLecturer
-    ? "Class activities (visible to everyone)"
-    : "Private activities (visible only to you)";
-
-  const canView = isLecturer
-    ? "All class activities"
-    : "All class activities and your own private activities";
-
-  return (
-    <main className="page">
-      <h1>Profile</h1>
-      <div className="card">
-        <dl className="profile-list">
-          <dt>Username</dt>
-          <dd>{currentUser.username}</dd>
-
-          <dt>Role</dt>
-          <dd>{roleLabel}</dd>
-
-          <dt>Can create</dt>
-          <dd>{canCreate}</dd>
-
-          <dt>Can view</dt>
-          <dd>{canView}</dd>
-        </dl>
-      </div>
-    </main>
-  );
+export default function Profile({ currentUser, onUpdate }) {
+  const [name, setName] = useState(currentUser.name)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError(''); setMessage('')
+    try { const user = await api('/profile', { method: 'PUT', body: { name } }); onUpdate(user); setMessage('Profile saved.') }
+    catch (error) { setError(error.message) }
+    finally { setBusy(false) }
+  }
+  return <main className="page"><h1>Profile</h1><form className="card" onSubmit={submit}>
+    <p><strong>Username:</strong> {currentUser.username}</p><p><strong>Role:</strong> {currentUser.role === 'administrator' ? 'Lecturer' : 'Student'}</p>
+    <p>{currentUser.role === 'administrator' ? 'Manage class activities and review class completion totals.' : 'View class work, manage your private activities, and record your own completion.'}</p>
+    {error && <p role="alert" className="field-error">{error}</p>}{message && <p role="status">{message}</p>}
+    <label htmlFor="profile-name">Name</label><input id="profile-name" value={name} onChange={e => setName(e.target.value)} required maxLength={80} />
+    <button disabled={busy}>{busy ? 'Saving...' : 'Save profile'}</button>
+  </form></main>
 }
-
-export default Profile;

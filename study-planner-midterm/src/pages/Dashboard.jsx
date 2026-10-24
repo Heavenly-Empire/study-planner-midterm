@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import TaskCard from '../components/TaskCard.jsx'
 import { getVisibleTasks } from '../data/selectTasks.js'
 
-export default function Dashboard({ currentUser, tasks, status, error, onRetry }) {
+export default function Dashboard({ currentUser, tasks, status, error, onRetry, onChanged, progress }) {
   if (status === 'loading') {
     return (
       <main className="page" aria-live="polite">
@@ -48,6 +48,8 @@ export default function Dashboard({ currentUser, tasks, status, error, onRetry }
         <p><strong>Class activities:</strong> {classCount}</p>
         {!isLecturer && <p><strong>Personal activities:</strong> {personalCount}</p>}
         <p><strong>Total visible:</strong> {visibleTasks.length}</p>
+        {!isLecturer && <p><strong>Completed:</strong> {visibleTasks.filter(task => task.completed).length} of {visibleTasks.length}</p>}
+        {isLecturer && progress.length > 0 && <><h3>Class completion</h3><ul>{progress.map(item => <li key={item.id}>{item.title}: {item.completed} of {item.students} students</li>)}</ul></>}
       </section>
 
       <section aria-labelledby="upcoming-heading">
@@ -62,7 +64,7 @@ export default function Dashboard({ currentUser, tasks, status, error, onRetry }
           <div style={{ display: 'grid', gap: '16px' }}>
             {/* The id stays with its activity, which gives React a stable key. */}
             {visibleTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard key={task.id} task={task} currentUser={currentUser} onChanged={onChanged} />
             ))}
           </div>
         )}
