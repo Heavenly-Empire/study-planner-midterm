@@ -1,10 +1,5 @@
-# Study Planner (Group 10)
+# Study Planner frontend
 
-A modular React study planning application built with Vite and React Router.
+The original React project now uses the Week 10 API. See the root README for setup, accounts, permissions and deployment status.
 
-## Getting Started
-
-1. Install dependencies: `npm install`
-2. Run development server: `npm run dev`
-3. Run test suite: `npm test`
-4. Build for production: `npm run build`
+Routes: #/login, #/dashboard, #/profile, #/form and #/activities/:id/edit.
