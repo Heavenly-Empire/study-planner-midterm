@@ -1,76 +1,73 @@
-# Study Planner - Group 10
+# Study Planner - Group 10 - Week 12
 
-Study Planner helps lecturers share class activities and students organise their personal study tasks. The Week 10 update connects the React interface to an Express API and stores accounts, activities and completion records in SQLite.
+This local continuation adds the student mobile client to the existing web/API source. The original checkout is preserved. No push or deployment has been made.
 
-## Team
+## Start the backend
 
-- Naraga Aji Anubhawa
-- Nurullah Adi Sutrisno Rabani
-- Hifa Nur Fathan
-- Marcello Immanuel Litano
+Open C:\Users\hifan\Downloads\Week 12\study-planner in VS Code. In a Command Prompt terminal:
 
-Hifa Nur Fathan completed the Week 10 update.
-
-## Run locally
-
-Install Node.js 24 LTS and open the repository root in VS Code. For a fresh clone:
-
-1. Copy `backend/.env.example` to `backend/.env`.
-2. In `backend/.env`, replace the `JWT_SECRET` placeholder with a unique random secret of at least 32 characters.
-3. Copy `study-planner-midterm/.env.example` to `study-planner-midterm/.env`.
-
-Keep existing `.env` files if the project is already configured. These local settings are ignored by Git.
-
-Start the backend in one terminal:
-
-```powershell
+```cmd
 cd backend
-npm ci
+whoami
+npm install
 npm run seed
 npm start
 ```
 
-Open a second terminal at the repository root and start the frontend:
+The local backend .env is prepared with a random signing secret, port 3000, HOST=0.0.0.0 and WEB_ORIGIN=http://localhost:5173. Do not share .env. The source default HOST remains 127.0.0.1. This fresh database contains the existing synthetic demo accounts and seeded class activities. Running seed again preserves existing work.
 
-```powershell
+## Test the phone network first
+
+Use ipconfig to find the active Wi-Fi IPv4 address. On the PHONE browser open http://YOUR_LAPTOP_IP:3000/api/health. JSON status ok proves connectivity. The protected activities endpoint should return 401 without a token.
+
+The prepared mobile-app/.env.local contains only EXPO_PUBLIC_API_URL=http://YOUR_LAPTOP_IP:3000. That was the observed Wi-Fi address during setup; change it if the network changes. Never use localhost or 0.0.0.0 as the phone URL. Expo --tunnel exposes Metro, not Express: port 3000 must be reachable separately. Keep the laptop and phone on a suitable trusted network.
+
+## Start the mobile client
+
+Open a second terminal at the repository root:
+
+```cmd
+cd mobile-app
+whoami
+npm install
+npx expo start --tunnel
+```
+
+Scan with Expo Go. Use the synthetic student / demo123 account. Lecturer accounts receive a student-only message. Tokens stay in memory; restarting the app requires another login.
+
+Open an activity, choose Update completion, and mark it complete/incomplete. The displayed result changes only after the server confirms it. Back reloads the focused detail/list. Pull down to refresh. Errors offer retry; a 401 clears the matching session. Sign out before changing accounts.
+
+## Start the existing web app
+
+Open a third terminal at the repository root:
+
+```cmd
 cd study-planner-midterm
-npm ci
+npm install
 npm run dev -- --port 5173 --strictPort
 ```
 
-Open [Study Planner locally](http://localhost:5173/study-planner-midterm/). The API runs on port 3000. Use `localhost` consistently so the browser origin matches `WEB_ORIGIN`.
+Open http://localhost:5173/study-planner-midterm/. Demo lecturer / demo123 creates class activities. Student / demo123 sees class and own private work.
 
-The seed creates two demo accounts:
+Create a class activity on web, refresh the phone, open that activity, and mark it complete. Refresh the lecturer summary to verify the shared database. Stop the backend once, confirm a readable phone error, restart it, and retry. Capture real phone login/list/detail/action, shared completion, and recovery.
 
-| Role | Username | Password |
-| --- | --- | --- |
-| Lecturer | lecturer | demo123 |
-| Student | student | demo123 |
+## Checks and scope
 
-Running the seed again preserves existing accounts and activities. Example class activities are added only when the activity table is empty.
+15 backend tests pass, including real-API tests for the mobile HTTP adapter. The 10 existing web tests, web lint and build pass. The 10 mobile JavaScript files pass lint; Metro web/native JavaScript exports pass. Exports used no-bytecode debugging mode, not a signed production release. Physical Android checks now verify login, list/detail, completion, phone/web synchronization, pull-to-refresh, and outage/retry recovery. The living Design Document includes all original evidence.
 
-## Permissions
-
-Lecturers create, edit and delete class activities and view class completion totals. Students see class activities, manage their own private tasks and record their own completion. New registrations receive student accounts. The API checks the signed-in account before returning or changing data; lecturers cannot view private student tasks.
-
-## Checks
-
-Run these commands from the repository root:
-
-```powershell
+```cmd
 npm --prefix backend test
 npm --prefix study-planner-midterm test
 npm --prefix study-planner-midterm run lint
 npm --prefix study-planner-midterm run build
 ```
 
-Backend tests use temporary databases. See [API documentation](docs/API.md) for request fields, responses and access rules.
+The living Design Document retains its filename and historical Week 10 appendix. Mobile use cases, architecture, UI wireframes and progress are updated. Editable diagrams are in docs/Week12-Diagrams.drawio.
 
-## Deployment and current scope
+AI, assignment submissions, named grading, hosting, reminders and course catalogues remain planned. This mobile milestone uses existing endpoints and requires no schema migration.
 
-- [GitHub repository](https://github.com/Heavenly-Empire/study-planner-midterm)
-- [Midterm website](https://heavenly-empire.github.io/study-planner-midterm/)
+Keep .env, .env.local, databases, node_modules, PDFs and personal screenshots out of Git. Review actual changes before a genuine commit; do not invent history. Public source ZIPs exclude local settings and dependencies.
 
-The public website serves the earlier frontend-only midterm build. The Week 10 application runs locally. Publishing it requires a hosted HTTPS API and a matching allowed frontend origin; GitHub Pages cannot run the Express backend or SQLite database.
+## Fresh source ZIP or another computer
 
-Mobile, AI, course modules and reminders are planned for later stages. JWTs expire after one hour. Signing out clears the browser token; server-side token revocation and login rate limiting are not implemented. Local environment files, databases and dependency directories are excluded from Git.
+Before starting a fresh source copy, copy backend/.env.example to backend/.env. Replace JWT_SECRET with your own random value of at least 32 characters. Set HOST=0.0.0.0 only for the intended LAN phone test. Copy study-planner-midterm/.env.example to .env in that same web folder. Copy mobile-app/.env.example to mobile-app/.env.local and enter the actual laptop LAN API address. These files are omitted from the source package except safe examples; the installed local Week 12 copy is already configured. Then follow npm install, npm run seed and npm start as above.
