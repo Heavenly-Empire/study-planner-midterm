@@ -8,9 +8,9 @@ import Profile from './pages/Profile'
 import TaskForm from './pages/TaskForm'
 import NotFound from './pages/NotFound'
 
-function ProtectedLayout({ currentUser, onLogout }) {
+function ProtectedLayout({ currentUser, onLogout, theme, setTheme }) {
   if (!currentUser) return <Navigate to="/login" replace />
-  return <><Navigation currentUser={currentUser} onLogout={onLogout} /><Outlet /></>
+  return <><Navigation currentUser={currentUser} onLogout={onLogout} theme={theme} setTheme={setTheme} /><Outlet /></>
 }
 
 export default function App() {
@@ -21,6 +21,11 @@ export default function App() {
   const [taskState, setTaskState] = useState({ status: 'loading', tasks: [], progress: [], error: '' })
   const [revision, setRevision] = useState(0)
   const navigate = useNavigate()
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
+  
+  useEffect(() => {  
+    document.documentElement.dataset.theme = theme; localStorage.setItem('theme', theme) }, [theme]
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -80,7 +85,7 @@ export default function App() {
 
   return <Routes>
     <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login onLogin={login} />} />
-    <Route element={<ProtectedLayout currentUser={currentUser} onLogout={logout} />}>
+    <Route element={<ProtectedLayout currentUser={currentUser} onLogout={logout} theme={theme} setTheme={setTheme} />}>
       <Route path="/dashboard" element={<Dashboard currentUser={currentUser} {...taskState} onRetry={reload} onChanged={reload} />} />
       <Route path="/profile" element={<Profile currentUser={currentUser} onUpdate={setCurrentUser} />} />
       <Route path="/form" element={<TaskForm key="create" currentUser={currentUser} onSave={saveTask} />} />
