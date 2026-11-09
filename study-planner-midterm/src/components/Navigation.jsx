@@ -1,6 +1,16 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 function Navigation({ currentUser, onLogout }) {
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+  );
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
   const roleLabel = currentUser.role === "administrator" ? "Lecturer" : "Student";
   const displayName = currentUser.name || currentUser.displayName || currentUser.username;
 
@@ -27,9 +37,13 @@ function Navigation({ currentUser, onLogout }) {
       </ul>
 
       <div className="nav-user">
+        <span className="avatar" aria-hidden="true">{displayName[0].toUpperCase()}</span>
         <span className="nav-user-info">
           {displayName} ({roleLabel})
         </span>
+        <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
         <button type="button" className="btn" onClick={onLogout}>
           Logout
         </button>
