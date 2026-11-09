@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import TaskForm from './pages/TaskForm'
 import NotFound from './pages/NotFound'
+import Forum from './pages/Forum.jsx'
 
 function ProtectedLayout({ currentUser, onLogout, theme, setTheme }) {
   if (!currentUser) return <Navigate to="/login" replace />
@@ -87,6 +88,7 @@ export default function App() {
     <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login onLogin={login} />} />
     <Route element={<ProtectedLayout currentUser={currentUser} onLogout={logout} theme={theme} setTheme={setTheme} />}>
       <Route path="/dashboard" element={<Dashboard currentUser={currentUser} {...taskState} onRetry={reload} onChanged={reload} />} />
+      <Route path="/forum" element={<Forum />} />
       <Route path="/profile" element={<Profile currentUser={currentUser} onUpdate={setCurrentUser} />} />
       <Route path="/form" element={<TaskForm key="create" currentUser={currentUser} onSave={saveTask} />} />
       <Route path="/activities/:id/edit" element={<TaskForm key="edit" currentUser={currentUser} onSave={saveTask} />} />

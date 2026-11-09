@@ -15,6 +15,11 @@ function Navigation({ currentUser, onLogout, theme, setTheme }) {
           </NavLink>
         </li>
         <li>
+          <NavLink to="/forum" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Forum
+          </NavLink>
+        </li>
+        <li>
           <NavLink to="/profile" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Profile
           </NavLink>
