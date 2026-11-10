@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import TaskCard from '../components/TaskCard.jsx'
 import { getVisibleTasks } from '../data/selectTasks.js'
+import StudyPlanAssistant from '../components/StudyPlanAssistant.jsx'
 
 export default function Dashboard({ currentUser, tasks, status, error, onRetry, onChanged, progress }) {
   if (status === 'loading') {
@@ -51,6 +52,9 @@ export default function Dashboard({ currentUser, tasks, status, error, onRetry, 
         {!isLecturer && <p><strong>Completed:</strong> {visibleTasks.filter(task => task.completed).length} of {visibleTasks.length}</p>}
         {isLecturer && progress.length > 0 && <><h3>Class completion</h3><ul>{progress.map(item => <li key={item.id}>{item.title}: {item.completed} of {item.students} students</li>)}</ul></>}
       </section>
+
+      {/* key resets the preview when another student signs in. */}
+      {!isLecturer && <StudyPlanAssistant key={currentUser.id} tasks={tasks} currentUser={currentUser} />}
 
       <section aria-labelledby="upcoming-heading">
         <h2 id="upcoming-heading">Upcoming activities</h2>
