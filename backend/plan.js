@@ -58,6 +58,7 @@ export function buildUserMessage(request, activities) {
 }
 
 function signPreview(secret, userId, request, activities, expiresAt) {
+  // The server signs the student ID, expiry time and exact text that will go to the provider.
   return createHmac('sha256', secret)
     .update(JSON.stringify(['study-plan-preview-v1', userId, expiresAt, buildUserMessage(request, activities)]))
     .digest('hex')
@@ -73,6 +74,7 @@ export function matchesPreview(secret, userId, request, activities, token) {
   if (!match) return false
   const expiresAt = Number(match[1])
   if (expiresAt <= Date.now()) return false
+  // Rebuild the signature from the current data. An edit to the notes changes the signature.
   const expected = signPreview(secret, userId, request, activities, expiresAt)
   return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(match[2], 'hex'))
 }

@@ -27,6 +27,7 @@ export function createAiService({ apiKey, model, client, fetchImpl = fetch, log 
     const entry = listing?.data?.find(item => item.id === model)
     if (!entry) throw new AiError('The configured AI model is not in the catalogue.', 503)
     const price = entry.pricing ?? {}
+    // A free model needs a listed zero price for both input and output tokens.
     if (!isZero(price.prompt) || !isZero(price.completion)
         || [price.request, price.image].some(value => value !== undefined && !isZero(value))) {
       throw new AiError('The configured AI model needs verified zero prices.', 503)
@@ -43,6 +44,7 @@ export function createAiService({ apiKey, model, client, fetchImpl = fetch, log 
           temperature: 0.3,
           max_tokens: 600,
           messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+          // Apply the same zero-price limit when OpenRouter picks a provider.
           provider: { allow_fallbacks: false, max_price: { prompt: 0, completion: 0, request: 0 } },
         }, { signal, maxRetries: 0 })
         const content = result?.choices?.[0]?.message?.content

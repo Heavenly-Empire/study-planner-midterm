@@ -20,6 +20,7 @@ export default function StudyPlanAssistant({ tasks, currentUser }) {
 
   // Ignore choices that disappeared (for example after completing an activity).
   const chosen = selected.filter(id => choices.some(task => task.id === id))
+  // A change to the account, dates or selected activities makes the old preview inactive.
   const signature = JSON.stringify([currentUser.id, startDate, endDate, dailyMinutes, selectionSignature(choices, chosen)])
   const currentPreview = preview?.signature === signature ? preview : null
   const confirmed = currentPreview && confirmedToken === currentPreview.previewToken
@@ -37,16 +38,16 @@ export default function StudyPlanAssistant({ tasks, currentUser }) {
     setMessage('')
   }
 
-  async function requestPlan(generate) {
-    if (busy || (generate && !confirmed)) return
+  async function requestPlan(sendToProvider) {
+    if (busy || (sendToProvider && !confirmed)) return
     controller.current?.abort()
     const request = new AbortController()
     controller.current = request
-    setStatus(generate ? 'loading' : 'previewing')
+    setStatus(sendToProvider ? 'loading' : 'previewing')
     setMessage('')
     try {
       const input = { startDate, endDate, dailyMinutes: Number(dailyMinutes), activityIds: chosen }
-      if (generate) {
+      if (sendToProvider) {
         const result = await api('/ai/generate-plan', {
           method: 'POST', signal: request.signal,
           body: { ...input, confirmed: true, previewToken: currentPreview.previewToken },
@@ -56,6 +57,7 @@ export default function StudyPlanAssistant({ tasks, currentUser }) {
         setConfirmedToken('')
         setStatus('done')
       } else {
+        // Show the server's copy of the activity text before asking for confirmation.
         const result = await api('/ai/plan-preview', { method: 'POST', signal: request.signal, body: input })
         if (request.signal.aborted) return
         setPreview({ ...result, signature })

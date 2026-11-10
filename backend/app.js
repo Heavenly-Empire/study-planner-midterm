@@ -171,6 +171,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
 
   app.post('/api/ai/plan-preview', preparePlan, (req, res) => {
     const { request, activities } = req.studyPlan
+    // The preview comes from SQLite. This step ends before any provider call.
     res.json({ activities, previewToken: createPreviewToken(secret, req.user.id, request, activities) })
   })
 
@@ -179,6 +180,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     const started = Date.now()
     res.on('finish', () => log(JSON.stringify({ event: 'ai-plan', status: res.statusCode, ms: Date.now() - started })))
     if (activities.length === 0) return res.json({ plan: [], warnings: ['No unfinished activities selected.'] })
+    // The student must confirm the preview, and it must still match the current activities.
     if (req.body.confirmed !== true || !matchesPreview(secret, req.user.id, request, activities, req.body.previewToken)) {
       return res.status(409).json({ error: 'Review the current activity text and confirm it before generating.' })
     }

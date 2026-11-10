@@ -25,9 +25,11 @@ npm start
 
 Seeded demo accounts (local only): lecturer / demo123 and student / demo123. Seeding again keeps existing work. On Windows, if the default npm cache fails, use `npm ci --cache .npm-cache` and keep that folder out of Git.
 
-### Optional: AI study plan
+### AI study plan
 
-Leave OPENROUTER_API_KEY and AI_MODEL blank to run without AI; the route then answers 503. To try it, put your own OpenRouter key and a model id in backend/.env. The server only uses a model the OpenRouter catalogue lists at zero price. Never commit the key. The limit of 5 requests per student per minute resets when the server restarts. See docs/API.md for the route and errors.
+Put your OpenRouter key and model ID in `backend/.env`, then restart the server. Choose a model with zero input and output prices in the OpenRouter catalogue. The server checks current pricing and asks OpenRouter to keep the request at zero cost. If the key, model or free route is unavailable, the app shows an error. The limit of five generation requests per student per minute resets when the server restarts.
+
+On the student dashboard, choose dates, a daily time limit and unfinished activities. Select **Review text to send** and read the preview. Check the confirmation box, then select **Generate plan**. The server accepts the preview for five minutes if the text and choices still match. The plan is editable on the page. See `docs/API.md` for the request fields and `docs/HANDOFF_RECORD.md` for the live check.
 
 ## Start the web app
 
@@ -64,4 +66,4 @@ git diff --check
 
 ## Scope
 
-Done: web app, API, student mobile app, study-plan preview. Planned: hosting (Week 13), optional grading and submissions. The GitHub Pages site is the earlier web demo and has no live API. Editable diagrams and the Design Document are kept by the team outside this repository; ask for the shared copy.
+The web app, API, student mobile app and study-plan preview run locally. The GitHub Pages site is the earlier web demo. Backend deployment is scheduled for Week 13. Grading and submissions remain optional. The team keeps the editable diagrams and Design Document in its shared files.
