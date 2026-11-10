@@ -12,9 +12,16 @@ export default function Profile({ currentUser, onUpdate }) {
     catch (error) { setError(error.message) }
     finally { setBusy(false) }
   }
+  const roleLabel = currentUser.role === 'administrator' ? 'Lecturer' : 'Student'
   return <main className="page"><h1>Profile</h1><form className="card" onSubmit={submit}>
-    <p><strong>Username:</strong> {currentUser.username}</p><p><strong>Role:</strong> {currentUser.role === 'administrator' ? 'Lecturer' : 'Student'}</p>
-    <p>{currentUser.role === 'administrator' ? 'Manage class activities and review class completion totals.' : 'View class work, manage your private activities, and record your own completion.'}</p>
+    <div className="profile-head">
+      <span className="avatar avatar-lg" aria-hidden="true">{(currentUser.name || currentUser.username)[0].toUpperCase()}</span>
+      <div>
+        <h2>{currentUser.name}</h2>
+        <p className="meta">@{currentUser.username} · {roleLabel}</p>
+      </div>
+    </div>
+    <p className="meta">{currentUser.role === 'administrator' ? 'Manage class activities and review class completion totals.' : 'View class work, manage your private activities, and record your own completion.'}</p>
     {error && <p role="alert" className="field-error">{error}</p>}{message && <p role="status">{message}</p>}
     <label htmlFor="profile-name">Name</label><input id="profile-name" value={name} onChange={e => setName(e.target.value)} required maxLength={80} />
     <button disabled={busy}>{busy ? 'Saving...' : 'Save profile'}</button>

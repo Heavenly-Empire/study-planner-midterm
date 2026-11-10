@@ -37,13 +37,15 @@ export default function TaskForm({ currentUser, onSave }) {
   }
   if (id && loadedId !== id) return <main className="page"><h1>Edit activity</h1>{error ? <><p role="alert">{error}</p><button onClick={() => { setError(''); setAttempt(value => value + 1) }}>Try again</button><p><Link to="/dashboard">Return to Dashboard</Link></p></> : <p role="status">Loading activity...</p>}</main>
   return <main className="page"><h1>{id ? 'Edit activity' : 'Input Form'}</h1>
-    <p>{currentUser.role === 'administrator' ? 'Class activities are visible to every student.' : 'Personal activities are visible only to you.'}</p>
+    <p className="meta">{currentUser.role === 'administrator' ? 'Class activities are visible to every student.' : 'Personal activities are visible only to you.'}</p>
     <form className="card" onSubmit={submit} noValidate>
       {error && <p role="alert" className="field-error">{error}</p>}
-      {[['title', 'Title', 'text', 120], ['course', 'Course', 'text', 100], ['dueDate', 'Due date', 'date']].map(([key, label, type, maxLength]) => <div key={key}>
-        <label htmlFor={key}>{label}</label><input id={key} type={type} maxLength={maxLength} value={fields[key]} onChange={e => setFields({ ...fields, [key]: e.target.value })} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `${key}-error` : undefined} />
-        {errors[key] && <p id={`${key}-error`} className="field-error">{errors[key]}</p>}
-      </div>)}
+      <div className="form-grid">
+        {[['title', 'Title', 'text', 120], ['course', 'Course', 'text', 100], ['dueDate', 'Due date', 'date']].map(([key, label, type, maxLength]) => <div key={key}>
+          <label htmlFor={key}>{label}</label><input id={key} type={type} maxLength={maxLength} value={fields[key]} onChange={e => setFields({ ...fields, [key]: e.target.value })} aria-invalid={!!errors[key]} aria-describedby={errors[key] ? `${key}-error` : undefined} />
+          {errors[key] && <p id={`${key}-error`} className="field-error">{errors[key]}</p>}
+        </div>)}
+      </div>
       <label htmlFor="notes">Notes (optional)</label><textarea id="notes" maxLength={2000} value={fields.notes} onChange={e => setFields({ ...fields, notes: e.target.value })} />
       <button disabled={busy}>{busy ? 'Saving...' : id ? 'Save changes' : 'Add activity'}</button>
     </form>
