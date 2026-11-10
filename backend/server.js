@@ -1,9 +1,11 @@
 import { createServer } from 'node:http'
 import { openDatabase } from './database.js'
 import { createApp } from './app.js'
+import { createAiService } from './ai.js'
 
 const db = openDatabase(process.env.DATABASE_PATH)
-const app = createApp(db, { secret: process.env.JWT_SECRET, origin: process.env.WEB_ORIGIN })
+const app = createApp(db, { secret: process.env.JWT_SECRET, origin: process.env.WEB_ORIGIN,
+  ai: createAiService({ apiKey: process.env.OPENROUTER_API_KEY, model: process.env.AI_MODEL }) })
 const host = process.env.HOST || '127.0.0.1'
 const port = Number(process.env.PORT ?? 3000)
 const server = createServer(app)
