@@ -184,7 +184,32 @@ test('provider service: blank config is null; only a zero-price catalogue model 
   const free = createAiService({ apiKey: 'k', model: 'free/model', client, log: line => logs.push(line), fetchImpl: catalogue({ prompt: '0', completion: '0' }) })
   assert.equal(await free.complete({ system: 's', user: 'u' }), '{"plan":[]}')
   assert.equal(seen.max_tokens, 600); assert.equal(seen.temperature, 0.3); assert.equal(seen.provider.allow_fallbacks, false)
+  assert.deepEqual(seen.provider.max_price, { prompt: 0, completion: 0, request: 0 })
   assert.deepEqual(Object.keys(JSON.parse(logs[0])).sort(), ['event', 'model', 'ms', 'tokens']) // no prompt or activity text in logs
+})
+
+test('missing and newly paid prices stop requests before chat completion', async () => {
+  const model = 'free/model'
+  let pricing = {}
+  let calls = 0
+  const client = { chat: { completions: { async create() {
+    calls += 1
+    return { choices: [{ message: { content: '{"plan":[]}' } }] }
+  } } } }
+  const service = createAiService({ apiKey: 'test', model, client, log: () => {},
+    fetchImpl: async () => Response.json({ data: [{ id: model, pricing }] }) })
+  const request = { system: 'Test', user: 'Synthetic text' }
+  await assert.rejects(service.complete(request), { status: 503 })
+  pricing = { prompt: '0', completion: null }
+  await assert.rejects(service.complete(request), { status: 503 })
+  pricing = { prompt: '0', completion: ' ' }
+  await assert.rejects(service.complete(request), { status: 503 })
+  assert.equal(calls, 0)
+  pricing = { prompt: '0', completion: '0', request: '0' }
+  await service.complete(request)
+  pricing = { ...pricing, request: '0.01' }
+  await assert.rejects(service.complete(request), { status: 503 })
+  assert.equal(calls, 1)
 })
 
 test('too much combined text is rejected for chosen IDs and skipped when IDs are omitted', async t => {
