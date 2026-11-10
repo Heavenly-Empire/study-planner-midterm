@@ -10,3 +10,4 @@ coverage/
 # Local course-submission materials
 docs/*
 !docs/API.md
+!docs/HANDOFF_RECORD.md
