@@ -2,13 +2,14 @@ import express from 'express'
 import cors from 'cors'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { LIMITS, validatePlanRequest, shapeActivities, textSize, pickWithinBudget, overdueWarnings, SYSTEM_PROMPT, buildUserMessage, parsePlanAnswer } from './plan.js'
 
 const publicUser = ({ id, username, name, role }) => ({ id, username, name, role })
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max
 const activityFields = `a.id, a.title, a.course, a.due_date AS dueDate, a.notes, a.scope,
   a.owner_id AS ownerId, a.created_at AS createdAt, COALESCE(p.completed, 0) AS completed`
 
-export function createApp(db, { secret, origin = 'http://localhost:5173' }) {
+export function createApp(db, { secret, origin = 'http://localhost:5173', ai = null, aiTimeoutMs = 15000, aiRateLimit = { max: 5, windowMs: 60000 }, log = console.log }) {
   if (!secret || secret.length < 32) throw new Error('JWT_SECRET must contain at least 32 characters.')
   const app = express()
   app.use(cors({ origin }))
@@ -128,6 +129,69 @@ export function createApp(db, { secret, origin = 'http://localhost:5173' }) {
       (SELECT count(*) FROM users WHERE role = 'client') AS students,
       (SELECT count(*) FROM activity_progress p WHERE p.activity_id = a.id AND p.completed = 1) AS completed
       FROM activities a WHERE a.scope = 'class' ORDER BY a.due_date`).all())
+  })
+
+  // Study-plan preview: one request per student per window; the plan is never saved.
+  const aiHits = new Map()
+  const rateLimited = userId => {
+    const now = Date.now()
+    const recent = (aiHits.get(userId) ?? []).filter(time => now - time < aiRateLimit.windowMs)
+    if (recent.length >= aiRateLimit.max) { aiHits.set(userId, recent); return true }
+    aiHits.set(userId, [...recent, now]); return false
+  }
+  app.post('/api/ai/generate-plan', async (req, res) => {
+    if (req.user.role !== 'client') return res.status(403).json({ error: 'Study plans are for students.' })
+    // Outcome and timing only; never activity text, tokens or user data.
+    const started = Date.now()
+    res.on('finish', () => log(JSON.stringify({ event: 'ai-plan', status: res.statusCode, ms: Date.now() - started })))
+    const checked = validatePlanRequest(req.body)
+    if (checked.error) return res.status(400).json({ error: checked.error })
+    const request = checked.value
+    // Eligible work: unfinished class activities plus this student's own unfinished private tasks.
+    const eligible = `FROM activities a LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.student_id = ?
+      WHERE (a.scope = 'class' OR (a.scope = 'personal' AND a.owner_id = ?))`
+    const columns = 'a.id, a.title, a.course, a.due_date AS dueDate, a.notes, COALESCE(p.completed, 0) AS completed'
+    let rows
+    if (request.activityIds) {
+      const marks = request.activityIds.map(() => '?').join(',')
+      rows = db.prepare(`SELECT ${columns} ${eligible} AND a.id IN (${marks}) ORDER BY a.due_date, a.title`)
+        .all(req.user.id, req.user.id, ...request.activityIds)
+      if (rows.length !== request.activityIds.length) return res.status(404).json({ error: 'Activity not found.' })
+      if (rows.some(row => row.completed)) return res.status(400).json({ error: 'Completed activities cannot be planned.' })
+      if (textSize(rows) > LIMITS.totalTextChars) return res.status(400).json({ error: `The selected activities have too much text (limit ${LIMITS.totalTextChars} characters). Choose fewer.` })
+    } else {
+      rows = db.prepare(`SELECT ${columns} ${eligible} AND COALESCE(p.completed, 0) = 0 ORDER BY a.due_date, a.title LIMIT 10`)
+        .all(req.user.id, req.user.id)
+      rows = pickWithinBudget(rows)
+    }
+    if (rows.length === 0) return res.json({ plan: [], warnings: ['No unfinished activities selected.'] })
+    if (!ai) return res.status(503).json({ error: 'The AI study-plan feature is not set up on this server.' })
+    if (rateLimited(req.user.id)) return res.status(429).json({ error: 'Too many plan requests. Wait a minute and try again.' })
+
+    const activities = shapeActivities(rows)
+    const allowedIds = new Set(activities.map(item => item.id))
+    const controller = new AbortController()
+    let timer
+    const deadline = new Promise((_resolve, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(Object.assign(new Error('timeout'), { timeout: true })) }, aiTimeoutMs)
+    })
+    const attempt = async user => parsePlanAnswer(await ai.complete({ system: SYSTEM_PROMPT, user, signal: controller.signal }), request, allowedIds)
+    const generate = async () => {
+      const user = buildUserMessage(request, activities)
+      try { return await attempt(user) } catch (error) {
+        if (error.name === 'AiError' || controller.signal.aborted) throw error
+        // One retry, telling the model what was wrong with its answer.
+        return attempt(`${user}\nYour previous answer was rejected: ${error.message} Reply with corrected JSON only.`)
+      }
+    }
+    try {
+      const result = await Promise.race([generate(), deadline])
+      res.json({ plan: result.plan, warnings: [...overdueWarnings(rows, request.startDate), ...result.warnings].slice(0, 5) })
+    } catch (error) {
+      if (error.timeout || controller.signal.aborted) return res.status(504).json({ error: 'The AI provider took too long. Please try again.' })
+      if (error.name === 'AiError') return res.status(error.status).json({ error: error.message })
+      res.status(502).json({ error: 'The AI answer could not be used. Please try again.' })
+    } finally { clearTimeout(timer); deadline.catch(() => {}) }
   })
   app.use((_req, res) => res.status(404).json({ error: 'Route not found.' }))
   app.use((err, _req, res, _next) => {
