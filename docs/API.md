@@ -16,6 +16,7 @@ Base URL: http://localhost:3000/api. JSON bodies. Protected requests use Authori
 | DELETE | /activities/:id | Same management rules | None | 204: no body |
 | PATCH | /activities/:id/completion | Student; visible activity; own progress | completed (boolean) | 200: activity |
 | GET | /progress | Lecturer | None | 200: class progress array |
+| POST | /ai/generate-plan | Student | startDate, endDate, dailyMinutes, optional activityIds | 200: plan, warnings |
 
 Activity fields: id, title, course, dueDate (YYYY-MM-DD), notes, scope, ownerId, createdAt, completed (0 or 1). completed is the requesting student's status, defaulting to 0. Scope and owner are assigned by the server and cannot be changed by PUT. Progress rows contain id, title, students (all registered students), completed (students who marked the class activity complete).
 
@@ -30,3 +31,36 @@ POST /activities example (illustration, not test output):
 ```
 
 The server responds with the saved activity. A lecturer receives class scope; a student receives personal scope. IDs and creation timestamps come from SQLite. Submitted roles and ownership values cannot grant permissions.
+
+## POST /ai/generate-plan (study-plan preview)
+
+Student only. Builds a suggested plan for unfinished work and returns it. Nothing is saved: activities, deadlines and completion are not changed. The server calls the AI provider; the key never reaches a browser.
+
+Request: startDate and endDate (real dates, YYYY-MM-DD, end not before start, at most 7 days), dailyMinutes (whole number, 15 to 240), optional activityIds (1 to 10 different positive integers). Without activityIds the server picks up to 10 unfinished activities (class work and the student's own private tasks) in due-date order.
+
+```json
+{"startDate":"2026-11-10","endDate":"2026-11-11","dailyMinutes":60,"activityIds":[2]}
+```
+
+Response (illustration, not test output): plan items have date, activityId, minutes and focus; warnings is a list of short notes.
+
+```json
+{"plan":[{"date":"2026-11-10","activityId":2,"minutes":30,"focus":"Review the selected topic"}],"warnings":[]}
+```
+
+What is sent to the provider: id, title, course, due date and notes of the selected activities (combined title, course and notes text of at most 5000 characters). No names, usernames, tokens, grades or submissions. Activity text is sent as data inside JSON and the system prompt tells the model not to follow it.
+
+The answer is checked before it is returned: valid JSON, dates inside the range, only the IDs sent, positive whole minutes, no day above dailyMinutes, bounded text. One retry is allowed if the answer is rejected. The whole request has a 15-second deadline, a 600-token output cap and temperature 0.3. Without activityIds the server skips unfinished work that would push the text over 5000 characters. Activities already due before startDate add a warning. The server logs only outcome, status, model, time and token count, never activity text.
+
+| Status | Meaning |
+| --- | --- |
+| 200 | Plan returned. If there is no unfinished work the plan is empty and the provider is not called |
+| 400 | Invalid dates, range, minutes or IDs, chosen activities with more than 5000 characters of text, or an explicitly selected completed activity |
+| 401 / 403 | No or expired session / lecturer account |
+| 404 | An ID is missing or not visible to this student (another student's private task) |
+| 429 | More than 5 requests per student per minute (the counter is kept in memory and resets when the server restarts) |
+| 502 | Provider failed or its answer was not usable |
+| 503 | OPENROUTER_API_KEY or AI_MODEL missing, or the model is not a verified zero-price model |
+| 504 | The provider did not answer within 15 seconds |
+
+Server settings in backend/.env: OPENROUTER_API_KEY and AI_MODEL (both blank in .env.example). Before the first request the server checks the OpenRouter model catalogue and only uses a model listed at zero price; paid fallback and SDK retries are off.
