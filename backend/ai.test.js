@@ -36,8 +36,14 @@ async function setup(t, { answer = null, ai, appOptions = {} } = {}) {
   }
   const login = async username => (await request('/auth/login', 'POST', { username, password: 'secret123' })).data.token
   const [teacher, alice, bob] = [await login('teacher'), await login('alice'), await login('bob')]
-  const generate = (body, token = alice) => request('/ai/generate-plan', 'POST', body, token)
-  return { db, ids, calls, teacher, alice, bob, generate, request }
+  const preview = (body, token = alice) => request('/ai/plan-preview', 'POST', body, token)
+  const sendPlan = (body, token = alice) => request('/ai/generate-plan', 'POST', body, token)
+  async function generate(body, token = alice) {
+    const review = await preview(body, token)
+    if (review.status !== 200) return sendPlan(body, token)
+    return sendPlan({ ...body, confirmed: true, previewToken: review.data.previewToken }, token)
+  }
+  return { db, ids, calls, teacher, alice, bob, generate, preview, sendPlan, request }
 }
 const planFor = (id, minutes = 30) => JSON.stringify({ plan: [{ date: '2026-11-10', activityId: id, minutes, focus: 'Review the topic' }], warnings: [] })
 
@@ -50,6 +56,27 @@ test('a valid request returns a checked plan and changes no study data', async t
   assert.deepEqual(result.data, { plan: [{ date: '2026-11-10', activityId: ctx.ids.classOne, minutes: 30, focus: 'Review the topic' }], warnings: [] })
   assert.equal(ctx.calls.length, 1)
   assert.equal(JSON.stringify(ctx.db.prepare('SELECT * FROM activities').all()) + JSON.stringify(ctx.db.prepare('SELECT * FROM activity_progress').all()), before)
+})
+
+test('generation requires confirmation of the same account, activity text and planning range', async t => {
+  const ctx = await setup(t, { answer: () => '{"plan":[],"warnings":[]}' })
+  const input = { ...goodRange, activityIds: [ctx.ids.classOne] }
+  const review = await ctx.preview(input)
+  assert.equal(review.status, 200)
+  assert.equal(review.data.activities[0].id, ctx.ids.classOne)
+  assert.equal(ctx.calls.length, 0)
+  const approved = { ...input, confirmed: true, previewToken: review.data.previewToken }
+  assert.equal((await ctx.sendPlan(input)).status, 409)
+  assert.equal((await ctx.sendPlan({ ...approved, confirmed: 'true' })).status, 409)
+  assert.equal((await ctx.sendPlan({ ...approved, previewToken: 'not-a-token' })).status, 409)
+  assert.equal((await ctx.sendPlan({ ...approved, dailyMinutes: 30 })).status, 409)
+  assert.equal((await ctx.sendPlan(approved, ctx.bob)).status, 409)
+  assert.equal((await ctx.request('/auth/me', 'GET', undefined, review.data.previewToken)).status, 401)
+  ctx.db.prepare('UPDATE activities SET notes = ? WHERE id = ?').run('Changed after review', ctx.ids.classOne)
+  assert.equal((await ctx.sendPlan(approved)).status, 409)
+  assert.equal(ctx.calls.length, 0)
+  assert.equal((await ctx.generate(input)).status, 200)
+  assert.match(ctx.calls[0].user, /Changed after review/)
 })
 
 test('missing token, expired access and lecturers are refused before any provider call', async t => {

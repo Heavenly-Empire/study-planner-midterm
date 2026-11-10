@@ -1,4 +1,5 @@
-// Pure helpers for POST /api/ai/generate-plan: request validation, prompt building, answer validation.
+import { createHmac, timingSafeEqual } from 'node:crypto'
+
 export const LIMITS = { maxDays: 7, minMinutes: 15, maxMinutes: 240, maxActivities: 10, totalTextChars: 5000, maxPlanItems: 70 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -54,6 +55,26 @@ export function buildUserMessage(request, activities) {
   // \u003c keeps user text from writing a closing marker or tag.
   const data = JSON.stringify(activities).replace(/</g, '\\u003c')
   return `Plan request: ${JSON.stringify({ startDate, endDate, dailyMinutes })}\n<<<ACTIVITY_DATA\n${data}\nACTIVITY_DATA>>>`
+}
+
+function signPreview(secret, userId, request, activities, expiresAt) {
+  return createHmac('sha256', secret)
+    .update(JSON.stringify(['study-plan-preview-v1', userId, expiresAt, buildUserMessage(request, activities)]))
+    .digest('hex')
+}
+
+export function createPreviewToken(secret, userId, request, activities) {
+  const expiresAt = Date.now() + 5 * 60_000
+  return `${expiresAt}.${signPreview(secret, userId, request, activities, expiresAt)}`
+}
+
+export function matchesPreview(secret, userId, request, activities, token) {
+  const match = typeof token === 'string' && token.match(/^(\d{13})\.([0-9a-f]{64})$/)
+  if (!match) return false
+  const expiresAt = Number(match[1])
+  if (expiresAt <= Date.now()) return false
+  const expected = signPreview(secret, userId, request, activities, expiresAt)
+  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(match[2], 'hex'))
 }
 
 // Returns { plan, warnings } or throws an Error whose message can be sent back to the model once.
