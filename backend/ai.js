@@ -32,17 +32,21 @@ export function createAiService({ apiKey, model, client, fetchImpl = fetch, log 
         || [price.request, price.image].some(value => value !== undefined && !isZero(value))) {
       throw new AiError('The configured AI model needs verified zero prices.', 503)
     }
+    return entry
   }
 
   return {
     async complete({ system, user, signal }) {
-      await verifyFreeModel(signal)
+      const entry = await verifyFreeModel(signal)
+      const canDisableReasoning = entry.reasoning?.mandatory === false && entry.supported_parameters?.includes('reasoning')
       const started = Date.now()
       try {
         const result = await openai.chat.completions.create({
           model,
           temperature: 0.3,
           max_tokens: 600,
+          // Optional reasoning can use up the output budget before the plan is written.
+          ...(canDisableReasoning && { reasoning: { enabled: false } }),
           messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
           // Apply the same zero-price limit when OpenRouter picks a provider.
           provider: { allow_fallbacks: false, max_price: { prompt: 0, completion: 0, request: 0 } },

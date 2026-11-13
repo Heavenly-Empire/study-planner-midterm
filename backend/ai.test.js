@@ -4,9 +4,10 @@ import bcrypt from 'bcryptjs'
 import { openDatabase } from './database.js'
 import { createApp } from './app.js'
 import { AiError, createAiService } from './ai.js'
+import { deadlineWarnings } from './plan.js'
 
 const secret = 'ai-test-only-secret-with-more-than-32-characters'
-const goodRange = { startDate: '2026-11-10', endDate: '2026-11-11', dailyMinutes: 60 }
+const goodRange = { startDate: '2026-11-10', endDate: '2026-11-10', dailyMinutes: 60 }
 
 // Starts an isolated API with an injected provider stub. answer(call) returns text or throws.
 async function setup(t, { answer = null, ai, appOptions = {} } = {}) {
@@ -59,7 +60,7 @@ test('a valid request returns a checked plan and changes no study data', async t
 })
 
 test('generation requires confirmation of the same account, activity text and planning range', async t => {
-  const ctx = await setup(t, { answer: () => '{"plan":[],"warnings":[]}' })
+  const ctx = await setup(t, { answer: () => planFor(ctx.ids.classOne) })
   const input = { ...goodRange, activityIds: [ctx.ids.classOne] }
   const review = await ctx.preview(input)
   assert.equal(review.status, 200)
@@ -152,6 +153,32 @@ test('one validation retry can recover; code fences are accepted', async t => {
   assert.equal(ctx.calls.length, 2)
 })
 
+test('a single activity gets different study tasks across a three-day plan', async t => {
+  const ctx = await setup(t, { answer: (_call, attempt) => {
+    const first = { date: '2026-11-10', activityId: ctx.ids.classOne, minutes: 20, focus: 'Sketch the process.' }
+    const second = { ...first, date: '2026-11-11', focus: 'Trace a worked example.' }
+    const third = { ...first, date: '2026-11-12', focus: 'Explain the process from memory.' }
+    return JSON.stringify({ plan: attempt === 1 ? [first, { ...first, date: second.date }, { ...first, date: third.date }] : [first, second, third] })
+  } })
+  const result = await ctx.generate({ ...goodRange, endDate: '2026-11-12', activityIds: [ctx.ids.classOne] })
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.data.plan.map(item => item.date), ['2026-11-10', '2026-11-11', '2026-11-12'])
+  assert.match(ctx.calls[1].user, /different study task on each of 3 distinct days/)
+})
+
+test('the planner retries when a selected activity is missing despite available time', async t => {
+  const ctx = await setup(t, { answer: (_call, attempt) => {
+    const first = { date: goodRange.startDate, activityId: ctx.ids.classOne, minutes: 15, focus: 'Sketch the process.' }
+    const second = { ...first, activityId: ctx.ids.alicePrivate, focus: 'Try a worked example.' }
+    return JSON.stringify({ plan: attempt === 1 ? [first] : [first, second] })
+  } })
+  const activityIds = [ctx.ids.classOne, ctx.ids.alicePrivate]
+  const result = await ctx.generate({ ...goodRange, activityIds })
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.data.plan.map(item => item.activityId), activityIds)
+  assert.match(ctx.calls[1].user, /at least 2 distinct selected activities/)
+})
+
 test('missing configuration gives 503, provider failure 502, slow provider 504', async t => {
   let ctx = await setup(t, { ai: null })
   assert.equal((await ctx.generate({ ...goodRange })).status, 503)
@@ -176,7 +203,10 @@ test('provider service: blank config is null; only a zero-price catalogue model 
   let seen
   const client = { chat: { completions: { create: async body => { seen = body; return { choices: [{ message: { content: '{"plan":[]}' } }], usage: { total_tokens: 42 } } } } } }
   const logs = []
-  const catalogue = pricing => async () => ({ ok: true, json: async () => ({ data: [{ id: 'free/model', pricing }] }) })
+  const catalogue = (pricing, mandatory = false) => async () => ({
+    ok: true,
+    json: async () => ({ data: [{ id: 'free/model', pricing, supported_parameters: ['reasoning'], reasoning: { mandatory } }] }),
+  })
   const paid = createAiService({ apiKey: 'k', model: 'free/model', client, fetchImpl: catalogue({ prompt: '0.000001', completion: '0' }) })
   await assert.rejects(paid.complete({ system: 's', user: 'u' }), error => error.status === 503)
   const missing = createAiService({ apiKey: 'k', model: 'other/model', client, fetchImpl: catalogue({ prompt: '0', completion: '0' }) })
@@ -185,7 +215,11 @@ test('provider service: blank config is null; only a zero-price catalogue model 
   assert.equal(await free.complete({ system: 's', user: 'u' }), '{"plan":[]}')
   assert.equal(seen.max_tokens, 600); assert.equal(seen.temperature, 0.3); assert.equal(seen.provider.allow_fallbacks, false)
   assert.deepEqual(seen.provider.max_price, { prompt: 0, completion: 0, request: 0 })
+  assert.deepEqual(seen.reasoning, { enabled: false })
   assert.deepEqual(Object.keys(JSON.parse(logs[0])).sort(), ['event', 'model', 'ms', 'tokens']) // no prompt or activity text in logs
+  const mandatory = createAiService({ apiKey: 'k', model: 'free/model', client, log: () => {}, fetchImpl: catalogue({ prompt: '0', completion: '0' }, true) })
+  await mandatory.complete({ system: 's', user: 'u' })
+  assert.equal(seen.reasoning, undefined)
 })
 
 test('missing and newly paid prices stop requests before chat completion', async () => {
@@ -223,7 +257,7 @@ test('too much combined text is rejected for chosen IDs and skipped when IDs are
   assert.ok(sent.reduce((sum, item) => sum + item.title.length + item.course.length + item.notes.length, 0) <= 5000)
 })
 
-test('work already due before the plan starts adds a warning; empty result uses the contract text', async t => {
+test('a deadline before the first study day adds a warning and empty results use the contract text', async t => {
   let ctx
   ctx = await setup(t, { answer: () => planFor(ctx.ids.classOne) })
   const result = await ctx.generate({ startDate: '2026-11-13', endDate: '2026-11-14', dailyMinutes: 60, activityIds: [ctx.ids.classOne] })
@@ -231,7 +265,19 @@ test('work already due before the plan starts adds a warning; empty result uses 
   const ok = await ctx.generate({ ...goodRange, activityIds: [ctx.ids.classOne] })
   assert.deepEqual(ok.data.warnings, [])
   ctx.db.prepare('UPDATE activities SET due_date = ? WHERE id = ?').run('2026-11-05', ctx.ids.classOne)
-  assert.match((await ctx.generate({ ...goodRange, activityIds: [ctx.ids.classOne] })).data.warnings[0], /was due on 2026-11-05/)
+  assert.match((await ctx.generate({ ...goodRange, activityIds: [ctx.ids.classOne] })).data.warnings[0], /due on 2026-11-05/)
   ctx.db.prepare('DELETE FROM activities WHERE scope = ? OR owner_id = 2').run('class')
   assert.deepEqual((await ctx.generate({ ...goodRange })).data, { plan: [], warnings: ['No unfinished activities selected.'] })
+})
+
+test('overdue work and upcoming deadlines before the first study day have different notices', () => {
+  const warnings = deadlineWarnings([
+    { title: 'Authentication practice', dueDate: '2026-10-27' },
+    { title: 'Database quiz', dueDate: '2026-11-12' },
+    { title: 'Data model review', dueDate: '2026-11-14' },
+  ], '2026-11-14', new Date(2026, 10, 12))
+  assert.deepEqual(warnings, [
+    '"Authentication practice" is overdue. It was due on 2026-10-27.',
+    '"Database quiz" is due on 2026-11-12, before your first study day.',
+  ])
 })

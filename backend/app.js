@@ -3,8 +3,8 @@ import cors from 'cors'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import {
-  LIMITS, validatePlanRequest, shapeActivities, textSize, pickWithinBudget, overdueWarnings,
-  SYSTEM_PROMPT, buildUserMessage, parsePlanAnswer, createPreviewToken, matchesPreview,
+  LIMITS, validatePlanRequest, shapeActivities, textSize, pickWithinBudget, deadlineWarnings,
+  buildPlanPrompt, buildUserMessage, parsePlanAnswer, createPreviewToken, matchesPreview,
 } from './plan.js'
 
 const publicUser = ({ id, username, name, role }) => ({ id, username, name, role })
@@ -182,7 +182,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     if (activities.length === 0) return res.json({ plan: [], warnings: ['No unfinished activities selected.'] })
     // The student must confirm the preview, and it must still match the current activities.
     if (req.body.confirmed !== true || !matchesPreview(secret, req.user.id, request, activities, req.body.previewToken)) {
-      return res.status(409).json({ error: 'Review the current activity text and confirm it before generating.' })
+      return res.status(409).json({ error: 'Review your details again to confirm they are up to date.' })
     }
     if (!ai) return res.status(503).json({ error: 'The AI study-plan feature is not set up on this server.' })
     if (rateLimited(req.user.id)) return res.status(429).json({ error: 'Too many plan requests. Wait a minute and try again.' })
@@ -193,7 +193,8 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     const deadline = new Promise((_resolve, reject) => {
       timer = setTimeout(() => { controller.abort(); reject(Object.assign(new Error('timeout'), { timeout: true })) }, aiTimeoutMs)
     })
-    const attempt = async user => parsePlanAnswer(await ai.complete({ system: SYSTEM_PROMPT, user, signal: controller.signal }), request, allowedIds)
+    const system = buildPlanPrompt(request, activities.length)
+    const attempt = async user => parsePlanAnswer(await ai.complete({ system, user, signal: controller.signal }), request, allowedIds)
     const generate = async () => {
       const user = buildUserMessage(request, activities)
       try { return await attempt(user) } catch (error) {
@@ -204,9 +205,9 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     }
     try {
       const result = await Promise.race([generate(), deadline])
-      res.json({ plan: result.plan, warnings: [...overdueWarnings(activities, request.startDate), ...result.warnings].slice(0, 5) })
+      res.json({ plan: result.plan, warnings: [...deadlineWarnings(activities, request.startDate), ...result.warnings].slice(0, 5) })
     } catch (error) {
-      if (error.timeout || controller.signal.aborted) return res.status(504).json({ error: 'The AI provider took too long. Please try again.' })
+      if (error.timeout || controller.signal.aborted) return res.status(504).json({ error: 'OpenRouter took too long to respond.' })
       if (error.name === 'AiError') return res.status(error.status).json({ error: error.message })
       res.status(502).json({ error: 'The AI answer could not be used. Please try again.' })
     } finally { clearTimeout(timer); deadline.catch(() => {}) }

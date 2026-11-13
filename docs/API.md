@@ -51,7 +51,7 @@ The preview returns `activities` and `previewToken`. Generation returns `plan` a
 
 What is sent to the provider: id, title, course, due date and notes of the selected activities (combined title, course and notes text of at most 5000 characters). No names, usernames, tokens, grades or submissions. Activity text is sent as data inside JSON and the system prompt tells the model not to follow it.
 
-The answer is checked before it is returned: valid JSON, dates inside the range, only the IDs sent, positive whole minutes, no day above dailyMinutes, bounded text. One retry is allowed if the answer is rejected. The whole request has a 15-second deadline, a 600-token output cap and temperature 0.3. Without activityIds the server skips unfinished work that would push the text over 5000 characters. Activities already due before startDate add a warning. The server logs only outcome, status, model, time and token count, never activity text.
+The server checks the JSON, dates, activity IDs, daily minutes and text length. For one activity, the answer must include a different study task on each of up to three days. When several activities are explicitly selected, the answer must cover at least as many as can fit with one 15-minute session per activity. One retry is allowed if the answer is rejected. The whole request has a 15-second deadline, a 600-token output cap and temperature 0.3. Without activityIds the server skips unfinished work that would push the text over 5000 characters. For deadlines before the first study day, warnings distinguish overdue work from upcoming deadlines. The server logs only outcome, status, model, time and token count.
 
 | Status | Meaning |
 | --- | --- |
