@@ -8,7 +8,7 @@ Run the migration, roster and grading checks when that extension is built.
 
 ### Regression and migration
 
-- [x] Current regression checks pass. The 10 November review ran 30 backend and 16 web tests, web lint and build.
+- [x] Current regression checks pass. 33 backend and 18 web tests passed, along with web lint and the production build.
 - [ ] Migration on a Week 10 database preserves users, activities and completion.
 - [ ] Existing rows become Practice; a second startup skips the applied migration.
 - [ ] Personal activities stay personal/Practice even if a client sends assignment or a different owner.
@@ -58,7 +58,7 @@ Run the migration, roster and grading checks when that extension is built.
 
 ## Week 11 study-plan checks
 
-The results below are for the local review branch based on `b8e1827`, checked on 10 November 2026.
+The results below cover the review branch and the live checks on 12 and 13 November 2026.
 
 | Check | Result |
 | --- | --- |
@@ -70,6 +70,6 @@ The results below are for the local review branch based on `b8e1827`, checked on
 | Provider failures and cost | Passed with a test provider. Timeout, missing setup and rate limit return readable errors. Missing or paid prices stop generation, and the outgoing request includes zero price limits. |
 | Browser flow | Passed at 375 px with a test provider. Checked preview, re-review after an edit, generation, editable result, error and lecturer access. |
 | Activity data | Passed. Generating and editing a preview leave saved activities and progress intact. |
-| Live OpenRouter result | Pending. Use a configured free model and synthetic activities. Record the date, model and result or the error shown. |
-| Teammate Android check | Pending. Use two synthetic students and record the result in the mobile checklist. |
+| Live OpenRouter result | Passed on 12 November. Nemotron 3.5 Lightning (free) returned a study plan, and the OpenRouter log showed $0.00. |
+| Android account check | Passed on 13 November. Hifa verified personal activity privacy and separate completion for each student. See `docs/HANDOFF_RECORD.md`. |
 | Explain the flow | Pending. Each member explains prompts, token limits, temperature, validation, the server-only key and why the app returns one JSON response. |
