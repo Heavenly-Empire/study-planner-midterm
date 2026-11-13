@@ -6,18 +6,15 @@ export class AiError extends Error {
 }
 
 const BASE_URL = 'https://openrouter.ai/api/v1'
-const isZero = value => value === undefined || value === null || Number(value) === 0
+const isZero = value => value === 0 || (typeof value === 'string' && value.trim() !== '' && Number(value) === 0)
 
 // Returns null when the key or model is missing, so the route can answer 503.
 // The client and the catalogue fetch can be replaced in tests.
 export function createAiService({ apiKey, model, client, fetchImpl = fetch, log = console.log } = {}) {
   if (!apiKey?.trim() || !model?.trim()) return null
   const openai = client ?? new OpenAI({ apiKey, baseURL: BASE_URL, maxRetries: 0 })
-  let verified = false
-
-  // Only a model the catalogue lists at zero price is allowed. A successful check is remembered.
+  // Check current pricing before each provider call.
   async function verifyFreeModel(signal) {
-    if (verified) return
     let listing
     try {
       const response = await fetchImpl(`${BASE_URL}/models`, { signal })
@@ -30,23 +27,29 @@ export function createAiService({ apiKey, model, client, fetchImpl = fetch, log 
     const entry = listing?.data?.find(item => item.id === model)
     if (!entry) throw new AiError('The configured AI model is not in the catalogue.', 503)
     const price = entry.pricing ?? {}
-    if (![price.prompt, price.completion, price.request, price.image].every(isZero)) {
-      throw new AiError('The configured AI model is not a zero-price model.', 503)
+    // A free model needs a listed zero price for both input and output tokens.
+    if (!isZero(price.prompt) || !isZero(price.completion)
+        || [price.request, price.image].some(value => value !== undefined && !isZero(value))) {
+      throw new AiError('The configured AI model needs verified zero prices.', 503)
     }
-    verified = true
+    return entry
   }
 
   return {
     async complete({ system, user, signal }) {
-      await verifyFreeModel(signal)
+      const entry = await verifyFreeModel(signal)
+      const canDisableReasoning = entry.reasoning?.mandatory === false && entry.supported_parameters?.includes('reasoning')
       const started = Date.now()
       try {
         const result = await openai.chat.completions.create({
           model,
           temperature: 0.3,
           max_tokens: 600,
+          // Optional reasoning can use up the output budget before the plan is written.
+          ...(canDisableReasoning && { reasoning: { enabled: false } }),
           messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-          provider: { allow_fallbacks: false }, // OpenRouter: never route to another (possibly paid) provider
+          // Apply the same zero-price limit when OpenRouter picks a provider.
+          provider: { allow_fallbacks: false, max_price: { prompt: 0, completion: 0, request: 0 } },
         }, { signal, maxRetries: 0 })
         const content = result?.choices?.[0]?.message?.content
         if (typeof content !== 'string' || !content.trim()) throw new AiError('The AI provider returned an empty answer.', 502)

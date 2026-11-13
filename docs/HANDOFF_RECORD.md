@@ -1,42 +1,19 @@
-# Week 12 handoff record (Study Planner, Group 10)
+# Study Planner handoff
 
-Fill the blanks yourself. A blank or "Not run" means it has not been done. Nothing here is marked as passed unless the result is written next to it.
+Group 10 | 13 November 2026
 
-Owner: Nurullah Date: 10 November 2026
-Starting commit: not recorded (changes uploaded through the GitHub website to branch feature/study-plan, created from main)
-Node version (node -v): v24.19.0
+The review branch adds a preview before students send activity details to OpenRouter. The server verifies that the model and provider route are free. The updated plan gives students specific study tasks, groups sessions by day, and flags deadlines that have already passed.
 
-## 1. Checks run by the owner (Windows, local machine, 10 Nov 2026)
+## Automated checks
 
-Run from the project root after `npm ci` in `backend` and in `study-planner-midterm`.
+33 backend tests and 18 web tests passed. Web lint and the production build passed. The backend tests cover authorization, personal activity access, completion, and persistence after reopening the database.
 
-| Command | Result |
-| --- | --- |
-| npm --prefix backend test | 28 tests passed, 0 failed (15 original + 13 new in backend/ai.test.js) |
-| npm --prefix study-planner-midterm test | 16 tests passed in 3 files (10 original + 6 new in studyPlan.test.js) |
-| npm --prefix study-planner-midterm run lint | No errors |
-| npm --prefix study-planner-midterm run build | Built successfully |
-| git diff --check | Not run (no local Git repository; changes uploaded through GitHub) |
+## Live OpenRouter check
 
-Note: the backend run prints a MODULE_TYPELESS_PACKAGE_JSON warning from the existing mobile adapter test. It is harmless and was there before this work.
+On 12 November, the first test used up its output budget on reasoning. Disabling optional reasoning let `nvidia/nemotron-3.5-lightning:free` return a plan. The OpenRouter activity log showed a completed request at $0.00. Later checks returned three different tasks for one overdue activity and covered ten selected activities across three days within the daily time limit.
 
-## 2. Check run earlier by the AI assistant (Claude, sandbox, Node 22.23.4)
+## Android account check
 
-This was a separate run on the assistant's copy, not on the owner's machine.
+On 13 November, Hifa saved **Private review practice** on the web as Budi Santoso. After refreshing Study Planner on Android, Budi could see it as **Personal**. Budi marked **Review authentication flow** complete, and the activity list showed the updated status.
 
-| Check | Result |
-| --- | --- |
-| Backend, web tests, lint and build on a clean install | Same results as section 1 (28 and 16 passed, lint clean, build ok) |
-| Real server started with blank OPENROUTER_API_KEY, student login, POST /api/ai/generate-plan | 503 with a readable "not set up" message |
-
-## 3. Still to do by a person
-
-| Item | Result |
-| --- | --- |
-| Click through the dashboard panel in a browser as a student (select, confirm, generate, edit text, error, account switch, lecturer sees no panel) | |
-| Live provider test: model id, date, result, latency or tokens, screenshot of the labelled plan and of a readable failure | |
-| Two-student phone checks (handoff p. 2), results into MOBILE_CHECKLIST.md | |
-| TASKS.md owner and status lines for each task (new file in this PR) | |
-| ACCEPTANCE_TESTS.md rows still marked Not run or Partly (new file in this PR) | |
-| Design Document and README review by a teammate from a fresh clone | |
-| Optional grading: agree scope first (handoff pp. 5-6) | Not started |
+After switching to Demo Student B on the same phone, the two shared class activities appeared. **Review authentication flow** showed **Not completed** for the second student, and Budi’s personal activity was absent. The screenshots from the web, Android, and OpenRouter were saved locally with the review.

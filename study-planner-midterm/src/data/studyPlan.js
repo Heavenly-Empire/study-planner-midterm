@@ -14,13 +14,49 @@ export function selectionSignature(tasks, selectedIds) {
     .map(task => [task.id, task.title, task.course, task.dueDate, task.notes]))
 }
 
-// Turn the server's plan into editable text. Unknown IDs are shown as "Activity <id>".
+const studyDate = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+})
+const studyDay = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+})
+
+export function formatStudyDate(value, includeWeekday = false) {
+  const date = new Date(`${value}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return value
+  return (includeWeekday ? studyDay : studyDate).format(date)
+}
+
+// Group sessions by day and show which selected activities still need time.
 export function formatPlan(result, tasks) {
   const names = new Map(tasks.map(task => [task.id, task.title]))
-  const lines = (result?.plan ?? []).map(item =>
-    `${item.date} - ${names.get(item.activityId) ?? `Activity ${item.activityId}`} (${item.minutes} min): ${item.focus}`)
-  const warnings = (result?.warnings ?? []).map(text => `Note: ${text}`)
-  return [...lines, ...(warnings.length && lines.length ? [''] : []), ...warnings].join('\n')
+  const days = new Map()
+  const scheduled = new Set()
+  for (const item of result?.plan ?? []) {
+    const day = days.get(item.date) ?? []
+    day.push(item)
+    days.set(item.date, day)
+    scheduled.add(item.activityId)
+  }
+
+  const sections = [...days].sort(([a], [b]) => a.localeCompare(b)).map(([date, items]) => {
+    const total = items.reduce((minutes, item) => minutes + item.minutes, 0)
+    const sessions = items.map(item => {
+      const title = names.get(item.activityId) ?? `Activity ${item.activityId}`
+      return `- ${title} (${item.minutes} min)\n  ${item.focus}`
+    })
+    return [`${formatStudyDate(date, true)} · ${total} min total`, ...sessions].join('\n')
+  })
+
+  if (sections.length === 0) sections.push('No study sessions were scheduled.')
+  const unscheduled = tasks.filter(task => !scheduled.has(task.id))
+  if (unscheduled.length) {
+    sections.push(['Selected activities without a session', ...unscheduled.map(task => `- ${task.title}`)].join('\n'))
+  }
+  const warnings = (result?.warnings ?? []).map(text =>
+    `- ${text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, date => formatStudyDate(date))}`)
+  if (warnings.length) sections.push(['Notes', ...warnings].join('\n'))
+  return sections.join('\n\n')
 }
 
 // Local calendar date as YYYY-MM-DD, plus a number of days.

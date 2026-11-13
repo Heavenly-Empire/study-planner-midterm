@@ -1,21 +1,21 @@
 # Week 12 task tracker
 
-Status starts as Not started. Fill actual owner names and dates at kickoff. These are future responsibilities, not a record of past contributions. Use the PDF for step-by-step instructions.
+Use this table to track the work and the evidence. Add an owner when the team assigns one.
 
 | Task | Suggested owner | Dependency | Deliverable and completion gate | Actual owner / status |
 | --- | --- | --- | --- | --- |
-| W12-01 | Integration lead | None | Fresh clone runs; baseline checks and starting commit recorded | Unassigned / Not started |
-| W11-AI1 | Backend + web | W12-01 | Protected study-plan route, server-only provider client, bounded prompt and JSON contract | <your name> / Code written, 28 backend and 16 web tests pass (2026-11-10). Browser check, live provider test and teammate review not done |
-| W11-AI2 | Backend + web + reviewer | W11-AI1 | Timeout, validation, cost limits, labelled UI, automated tests and real provider demonstration | <your name> / Timeout, validation, rate limit, labelled UI and automated tests done. Real provider demonstration not done; reviewer not assigned |
-| W12-02 | Backend + mobile | 01 | Optional HOST support; phone health works; protected task list still returns 401 without JWT | Unassigned / Not started |
-| W12-03 | Mobile | 02 | SDK58 JavaScript shell, Router app/, config.js and ignored local address; Expo Go loads | Unassigned / Not started |
-| W12-04 | Mobile | 03 | Student login, FlatList, ID detail, completion, refresh and error states tested on phone | Unassigned / Not started |
+| W12-01 | Integration lead | None | Fresh clone runs; baseline checks and starting commit recorded | Fresh checkout of `b8e1827` verified on 10 Nov. Backend and web tests, lint and build passed. |
+| W11-AI1 | Backend + web | W12-01 | Protected study-plan route, server-only provider client, bounded prompt and JSON contract | Nurullah built the generator on `main`. The review branch adds server-side confirmation and passes the local checks on 10 Nov. |
+| W11-AI2 | Backend + web + reviewer | W11-AI1 | Timeout, validation, cost limits, labelled UI, automated tests and real provider demonstration | Nurullah implemented validation, timeout and rate limits. The review branch adds zero-price enforcement. A live OpenRouter run returned a plan on 12 Nov at $0.00. |
+| W12-02 | Backend + mobile | 01 | Optional HOST support; phone health works; protected task list still returns 401 without JWT | Hifa / Phone health and LAN setup shown in the Week 12 submission. |
+| W12-03 | Mobile | 02 | SDK58 JavaScript shell, Router app/, config.js and ignored local address; Expo Go loads | Hifa / Expo client published on `main` and demonstrated on Android. |
+| W12-04 | Mobile | 03 | Student login, FlatList, ID detail, completion, refresh and error states tested on phone | Hifa / Login, list, detail, completion, refresh and recovery demonstrated. The two-student check passed on 13 Nov. |
 | W12-05 | Web + backend | 01 | Agree Assignment/Practice, immutable submission, fixed /100 and draft/publication policy | Unassigned / Not started |
 | W12-06 | Backend | 05 | Versioned migration preserves old rows and cascades new records correctly | Unassigned / Not started |
 | W12-07 | Backend | 06 | Proposed contract implemented with authorization, draft privacy and validation tests | Unassigned / Not started |
 | W12-08 | Web | 07 | Named progress, submission form, grade review and student results; pending/error states | Unassigned / Not started |
-| W12-09 | Reviewer + owners | 04,08 | Two-student privacy test, restart persistence, regression checks and real screenshots | Unassigned / Not started |
-| W12-10 | Documentation owner | Actual progress | Same report updated; mobile use cases, architecture, UI designs, real progress and owners | Unassigned / Not started |
+| W12-09 | Reviewer + owners | 04,08 | Two-student privacy test, restart persistence, regression checks and real screenshots | API role and privacy checks passed, including persistence after reopening the database. Hifa verified privacy and separate completion on Android. Optional grading checks follow if the team builds it. |
+| W12-10 | Documentation owner | Actual progress | Same report updated; mobile use cases, architecture, UI designs, real progress and owners | Hifa / Week 12 mobile report complete. The handoff records the automated, OpenRouter and Android results. |
 
 ## Scope gate
 
