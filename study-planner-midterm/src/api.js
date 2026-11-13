@@ -19,7 +19,7 @@ export async function api(path, { method = 'GET', body, signal, token = localSto
       localStorage.removeItem(tokenKey)
       window.dispatchEvent(new Event('session-expired'))
     }
-    throw new Error(data?.error || 'The request failed. Please try again.')
+    throw Object.assign(new Error(data?.error || 'The request failed. Please try again.'), { status: response.status })
   }
   return data
 }

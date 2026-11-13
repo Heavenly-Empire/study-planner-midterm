@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_TEXT, eligibleTasks, formatPlan, localDate, selectionSignature, textSize } from './studyPlan.js'
+import { MAX_TEXT, eligibleTasks, formatPlan, formatStudyDate, localDate, selectionSignature, textSize } from './studyPlan.js'
 
 const student = { id: 2, role: 'client' }
 const tasks = [
@@ -21,10 +21,26 @@ describe('study plan helpers', () => {
     expect(selectionSignature(tasks.map(task => task.id === 3 ? { ...task, notes: 'changed' } : task), [3])).not.toBe(before)
     expect(selectionSignature(tasks, [3])).toBe(before)
   })
-  it('formats the plan and warnings as editable text', () => {
-    const text = formatPlan({ plan: [{ date: '2026-11-10', activityId: 3, minutes: 30, focus: 'Review' }, { date: '2026-11-11', activityId: 77, minutes: 15, focus: 'Read' }], warnings: ['Short on time'] }, tasks)
-    expect(text).toBe('2026-11-10 - A mine (30 min): Review\n2026-11-11 - Activity 77 (15 min): Read\n\nNote: Short on time')
-    expect(formatPlan({ plan: [], warnings: ['Nothing to plan'] }, tasks)).toBe('Note: Nothing to plan')
+  it('groups sessions in date order, totals minutes and identifies selected work left out', () => {
+    const text = formatPlan({
+      plan: [
+        { date: '2026-11-12', activityId: 3, minutes: 15, focus: 'Check your answers.' },
+        { date: '2026-11-11', activityId: 3, minutes: 30, focus: 'Solve two practice problems.' },
+        { date: '2026-11-11', activityId: 77, minutes: 15, focus: 'Read a worked example.' },
+      ],
+      warnings: ['A mine was due on 2026-11-10.'],
+    }, [tasks[0], tasks[2]])
+    expect(text).toContain('Wednesday, 11 Nov 2026 · 45 min total\n- A mine (30 min)\n  Solve two practice problems.\n- Activity 77 (15 min)')
+    expect(text).toContain('Thursday, 12 Nov 2026 · 15 min total')
+    expect(text.indexOf('Wednesday')).toBeLessThan(text.indexOf('Thursday'))
+    expect(text).toContain('Selected activities without a session\n- B class')
+    expect(text).toContain('Notes\n- A mine was due on 10 Nov 2026.')
+    expect(formatPlan({ plan: [] }, [])).toBe('No study sessions were scheduled.')
+  })
+  it('spells out the month without shifting the calendar day', () => {
+    expect(formatStudyDate('2026-11-12', true)).toBe('Thursday, 12 Nov 2026')
+    expect(formatStudyDate('2026-11-12')).toBe('12 Nov 2026')
+    expect(formatStudyDate('')).toBe('')
   })
   it('builds local dates', () => {
     expect(localDate(2, new Date(2026, 10, 9))).toBe('2026-11-11')

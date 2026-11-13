@@ -29,7 +29,7 @@ Seeded demo accounts (local only): lecturer / demo123 and student / demo123. See
 
 Put your OpenRouter key and model ID in `backend/.env`, then restart the server. Choose a model with zero input and output prices in the OpenRouter catalogue. The server checks current pricing and asks OpenRouter to keep the request at zero cost. If the key, model or free route is unavailable, the app shows an error. The limit of five generation requests per student per minute resets when the server restarts.
 
-On the student dashboard, choose dates, a daily time limit and unfinished activities. Select **Review text to send** and read the preview. Check the confirmation box, then select **Generate plan**. The server accepts the preview for five minutes if the text and choices still match. The plan is editable on the page. See `docs/API.md` for the request fields and `docs/HANDOFF_RECORD.md` for the live check.
+On the student dashboard, choose dates, a daily time limit and unfinished activities. Select **Review details**, read what will be shared with OpenRouter, and check the confirmation box. Select **Generate study plan** to get an editable suggestion. If OpenRouter takes too long, select **Try again**. The server accepts a review for five minutes if the details still match. See `docs/API.md` for the request fields and `docs/HANDOFF_RECORD.md` for the live check.
 
 ## Start the web app
 

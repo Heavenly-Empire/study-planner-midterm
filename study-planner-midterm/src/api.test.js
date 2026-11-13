@@ -23,6 +23,15 @@ describe('API requests', () => {
     expect(stored.has(tokenKey)).toBe(false)
     expect(dispatchEvent.mock.calls[0][0].type).toBe('session-expired')
   })
+
+  it('keeps the HTTP status so callers can offer the right retry', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 504, json: async () => ({ error: 'OpenRouter took too long to respond.' }),
+    }))
+    await expect(api('/ai/generate-plan')).rejects.toMatchObject({
+      status: 504, message: 'OpenRouter took too long to respond.',
+    })
+  })
   it('keeps an existing session when a public login attempt fails', async () => {
     stored.set(tokenKey, 'existing')
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Invalid credentials' }) }))
