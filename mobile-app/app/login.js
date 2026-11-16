@@ -59,6 +59,8 @@ export default function LoginScreen() {
       {missingPassword ? <Text accessibilityRole="alert" style={styles.error}>Enter your password.</Text> : null}
       {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
       <ActionButton title={pending ? "Signing in…" : "Sign in"} onPress={submit} busy={pending} />
+      {Platform.OS === "web" ? null :
+        <Text style={styles.muted}>Your sign-in is saved on this device.</Text>}
     </ScrollView>
   );
 }
