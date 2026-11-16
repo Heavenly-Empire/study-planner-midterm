@@ -31,6 +31,7 @@ body {
 .nav-link:hover { background: #3b5bc4; }
 .nav-link.active { background: #ffffff; color: #1e3a8a; font-weight: bold; }
 .nav-user { display: flex; align-items: center; gap: 12px; }
+.nav-user-info { min-width: 0; overflow-wrap: anywhere; }
 
 /* Layout */
 .page { max-width: 800px; margin: 24px auto; padding: 0 16px; }
