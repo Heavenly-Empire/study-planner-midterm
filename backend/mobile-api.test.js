@@ -6,10 +6,14 @@ import { createApp } from './app.js'
 
 // Exercise the actual mobile HTTP adapter against an isolated real API/database.
 test('mobile adapter uses the protected activity contract', async t => {
-  const db = openDatabase(':memory:')
+  const db = await openDatabase(':memory:')
   const hash = bcrypt.hashSync('test123', 4)
-  db.prepare("INSERT INTO users (username,name,password_hash,role) VALUES ('mobile_student','Test student',?,'client')").run(hash)
-  db.prepare("INSERT INTO users (username,name,password_hash,role) VALUES ('mobile_teacher','Test teacher',?,'administrator')").run(hash)
+  const addUser = (username, name, role) => db.execute({
+    sql: 'INSERT INTO users (username,name,password_hash,role) VALUES (?,?,?,?)',
+    args: [username, name, hash, role],
+  })
+  await addUser('mobile_student', 'Test student', 'client')
+  await addUser('mobile_teacher', 'Test teacher', 'administrator')
   const server = createApp(db, {secret:'isolated-mobile-test-secret-at-least-32-characters'}).listen(0,'127.0.0.1')
   await new Promise(resolve => server.once('listening',resolve))
   t.after(async () => { await new Promise(resolve => server.close(resolve)); db.close() })
