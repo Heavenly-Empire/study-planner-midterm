@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const touchTarget = 48;
 
@@ -13,6 +14,12 @@ export function ActionButton({ title, onPress, disabled = false, busy = false })
       <Text style={styles.buttonText}>{title}</Text>
     </Pressable>
   );
+}
+
+export function ActionFooter({ children }) {
+  const { bottom } = useSafeAreaInsets();
+
+  return <View style={[styles.actionFooter, { paddingBottom: 16 + bottom }]}>{children}</View>;
 }
 
 export function Message({ title, detail, retry }) {
@@ -39,5 +46,6 @@ export const styles = StyleSheet.create({
   dim: { opacity: 0.6 },
   error: { color: "#b91c1c", fontSize: 15, lineHeight: 22 },
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 18, marginHorizontal: 16, marginBottom: 12, gap: 6, borderWidth: 1, borderColor: "#e2e8f0" },
+  actionFooter: { backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#e2e8f0", padding: 16, gap: 10 },
   listHeader: { padding: 20, gap: 12 },
 });
