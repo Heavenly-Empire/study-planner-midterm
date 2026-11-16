@@ -76,4 +76,35 @@ test('authentication, ownership, CRUD and completion', async (t) => {
     assert.equal((await request(`/activities/${privateTask.id}`, 'DELETE', undefined, student)).status, 204)
     assert.deepEqual((await request('/activities', 'GET', undefined, student)).data, [])
   })
+  await t.test('an activity read returns JSON if the activity is deleted just after the read', async t => {
+    const body = { title: 'Shared notes', course: 'Web Development', dueDate: '2026-11-30' }
+    const { id } = (await request('/activities', 'POST', body, teacher)).data
+    const execute = db.execute.bind(db)
+    t.mock.method(db, 'execute', async statement => {
+      const result = await execute(statement)
+      if (statement.sql.includes('FROM activities') && Number(statement.args.at(-1)) === id) {
+        await execute({ sql: 'DELETE FROM activities WHERE id = ?', args: [id] })
+      }
+      return result
+    })
+
+    const activity = await request(`/activities/${id}`, 'GET', undefined, student)
+    assert.equal(activity.status, 200)
+    assert.equal(activity.data.id, id)
+    assert.equal((await request(`/activities/${id}`, 'GET', undefined, student)).status, 404)
+  })
+  await t.test('deletion just before a completion write returns 404', async t => {
+    const body = { title: 'Class exercise', course: 'Web Development', dueDate: '2026-11-30' }
+    const { id } = (await request('/activities', 'POST', body, teacher)).data
+    const execute = db.execute.bind(db)
+    t.mock.method(db, 'execute', async statement => {
+      if (statement.sql.includes('INSERT INTO activity_progress')) {
+        await execute({ sql: 'DELETE FROM activities WHERE id = ?', args: [id] })
+      }
+      return execute(statement)
+    })
+
+    const result = await request(`/activities/${id}/completion`, 'PATCH', { completed: true }, student)
+    assert.deepEqual(result, { status: 404, data: { error: 'Activity not found.' } })
+  })
 })

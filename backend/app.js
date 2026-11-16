@@ -76,11 +76,16 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     res.json(publicUser(await get('SELECT * FROM users WHERE id = ?', [req.user.id])))
   })
 
-  const canRead = (user, a) => a.scope === 'class' || (user.role === 'client' && a.owner_id === user.id)
+  const activityNotFound = res => res.status(404).json({ error: 'Activity not found.' })
+  const canRead = (user, a) => a.scope === 'class' || (user.role === 'client' && a.ownerId === user.id)
   const canManage = (user, a) => (user.role === 'administrator' && a.scope === 'class')
-    || (user.role === 'client' && a.scope === 'personal' && a.owner_id === user.id)
+    || (user.role === 'client' && a.scope === 'personal' && a.ownerId === user.id)
   const readActivity = (id, user) => get(`SELECT ${activityFields} FROM activities a
     LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.student_id = ? WHERE a.id = ?`, [user.id, id])
+  async function sendActivity(res, id, user) {
+    const activity = await readActivity(id, user)
+    return activity ? res.json(activity) : activityNotFound(res)
+  }
   function validateActivity(body) {
     if (!text(body?.title, 120) || !text(body?.course, 100)) return 'Title and course are required (maximum 120 and 100 characters).'
     if (typeof body.dueDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.dueDate)
@@ -101,15 +106,15 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     const scope = req.user.role === 'administrator' ? 'class' : 'personal'
     const result = await run('INSERT INTO activities (title, course, due_date, notes, scope, owner_id) VALUES (?, ?, ?, ?, ?, ?)',
       [title.trim(), course.trim(), dueDate, notes.trim(), scope, req.user.id])
-    res.status(201).json(await readActivity(Number(result.lastInsertRowid), req.user))
+    await sendActivity(res.status(201), Number(result.lastInsertRowid), req.user)
   })
   app.use('/api/activities/:id', async (req, res, next) => {
-    if (!/^[1-9]\d*$/.test(req.params.id)) return res.status(404).json({ error: 'Activity not found.' })
-    req.activity = await get('SELECT * FROM activities WHERE id = ?', [req.params.id])
-    if (!req.activity || !canRead(req.user, req.activity)) return res.status(404).json({ error: 'Activity not found.' })
+    if (!/^[1-9]\d*$/.test(req.params.id)) return activityNotFound(res)
+    req.activity = await readActivity(req.params.id, req.user)
+    if (!req.activity || !canRead(req.user, req.activity)) return activityNotFound(res)
     next()
   })
-  app.get('/api/activities/:id', async (req, res) => res.json(await readActivity(req.activity.id, req.user)))
+  app.get('/api/activities/:id', (req, res) => res.json(req.activity))
   app.put('/api/activities/:id', async (req, res) => {
     if (!canManage(req.user, req.activity)) return res.status(403).json({ error: 'You cannot edit this activity.' })
     const error = validateActivity(req.body)
@@ -117,21 +122,24 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     const { title, course, dueDate, notes = '' } = req.body
     await run('UPDATE activities SET title = ?, course = ?, due_date = ?, notes = ? WHERE id = ?',
       [title.trim(), course.trim(), dueDate, notes.trim(), req.activity.id])
-    res.json(await readActivity(req.activity.id, req.user))
+    await sendActivity(res, req.activity.id, req.user)
   })
   app.delete('/api/activities/:id', async (req, res) => {
     if (!canManage(req.user, req.activity)) return res.status(403).json({ error: 'You cannot delete this activity.' })
-    await run('DELETE FROM activities WHERE id = ?', [req.activity.id])
+    const deleted = await run('DELETE FROM activities WHERE id = ?', [req.activity.id])
+    if (deleted.rowsAffected === 0) return activityNotFound(res)
     res.status(204).end()
   })
   app.patch('/api/activities/:id/completion', async (req, res) => {
     if (req.user.role !== 'client') return res.status(403).json({ error: 'Completion is recorded by each student.' })
     if (typeof req.body?.completed !== 'boolean') return res.status(400).json({ error: 'completed must be true or false.' })
-    // One statement, so the upsert stays atomic and keeps a single row per student and activity.
-    await run(`INSERT INTO activity_progress (activity_id, student_id, completed) VALUES (?, ?, ?)
+    // The lecturer may delete the activity after the permission check.
+    const saved = await run(`INSERT INTO activity_progress (activity_id, student_id, completed)
+      SELECT id, ?, ? FROM activities WHERE id = ?
       ON CONFLICT(activity_id, student_id) DO UPDATE SET completed = excluded.completed`,
-      [req.activity.id, req.user.id, Number(req.body.completed)])
-    res.json(await readActivity(req.activity.id, req.user))
+      [req.user.id, Number(req.body.completed), req.activity.id])
+    if (saved.rowsAffected === 0) return activityNotFound(res)
+    await sendActivity(res, req.activity.id, req.user)
   })
   app.get('/api/progress', async (req, res) => {
     if (req.user.role !== 'administrator') return res.status(403).json({ error: 'Lecturer access required.' })
