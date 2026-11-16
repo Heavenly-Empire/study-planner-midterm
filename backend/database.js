@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import { createClient } from '@libsql/client'
 
 const SCHEMA = [
@@ -28,7 +29,10 @@ const SCHEMA = [
   'CREATE INDEX IF NOT EXISTS progress_student ON activity_progress(student_id)',
 ]
 
-// Decides where the database lives. Hosted or production never falls back to a local file.
+function localDatabaseUrl(filename) {
+  return filename === ':memory:' ? filename : pathToFileURL(filename).href
+}
+
 export function databaseTarget(env = process.env) {
   const url = env.TURSO_DATABASE_URL?.trim()
   const authToken = env.TURSO_AUTH_TOKEN?.trim()
@@ -37,16 +41,19 @@ export function databaseTarget(env = process.env) {
     if (!url || !authToken) {
       throw new Error('TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must both be set for a hosted or production database.')
     }
+    const address = URL.canParse(url) ? new URL(url) : null
+    if (!address?.hostname || !['libsql:', 'https:', 'wss:'].includes(address.protocol)) {
+      throw new Error('TURSO_DATABASE_URL must point to a hosted database.')
+    }
     return { url, authToken, remote: true }
   }
-    const path = env.DATABASE_PATH || 'study-planner.db'
-  return { url: path === ':memory:' ? path : `file:${path}`, remote: false }
+  return { url: localDatabaseUrl(env.DATABASE_PATH || 'study-planner.db'), remote: false }
 }
 
 // Accepts a local filename (tests, ':memory:') or a { url, authToken } target.
 export async function openDatabase(target = 'study-planner.db') {
   const config = typeof target === 'string'
-    ? { url: target === ':memory:' ? target : `file:${target}`, remote: false }
+    ? { url: localDatabaseUrl(target), remote: false }
     : target
   const db = createClient({ url: config.url, authToken: config.authToken })
   try {
