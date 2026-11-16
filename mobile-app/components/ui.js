@@ -1,9 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
-export function ActionButton({ title, onPress, disabled = false }) {
+const touchTarget = 48;
+
+export function ActionButton({ title, onPress, disabled = false, busy = false }) {
+  const unavailable = disabled || busy;
+
   return (
-    <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress}
+    <Pressable accessibilityRole="button" accessibilityLabel={title}
+      accessibilityState={{ disabled: unavailable, busy }} disabled={unavailable} onPress={onPress}
       style={({ pressed }) => [styles.button, (pressed || disabled) && styles.dim]}>
+      {busy ? <ActivityIndicator color="#fff" accessible={false} /> : null}
       <Text style={styles.buttonText}>{title}</Text>
     </Pressable>
   );
@@ -27,8 +33,8 @@ export const styles = StyleSheet.create({
   body: { fontSize: 16, lineHeight: 24, color: "#334155" },
   muted: { fontSize: 14, color: "#64748b" },
   label: { fontSize: 15, fontWeight: "600", color: "#334155" },
-  input: { backgroundColor: "#fff", borderColor: "#94a3b8", borderWidth: 1, padding: 13, borderRadius: 10, fontSize: 16 },
-  button: { backgroundColor: "#0f766e", paddingVertical: 13, paddingHorizontal: 18, borderRadius: 10, alignItems: "center" },
+  input: { backgroundColor: "#fff", borderColor: "#94a3b8", borderWidth: 1, padding: 13, borderRadius: 10, fontSize: 16, minHeight: touchTarget },
+  button: { backgroundColor: "#0f766e", paddingVertical: 13, paddingHorizontal: 18, borderRadius: 10, minHeight: touchTarget, minWidth: touchTarget, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   dim: { opacity: 0.6 },
   error: { color: "#b91c1c", fontSize: 15, lineHeight: 22 },
