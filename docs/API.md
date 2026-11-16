@@ -21,6 +21,8 @@ Base URL: http://localhost:3000/api. JSON bodies. Protected requests use Authori
 
 Activity fields: id, title, course, dueDate (YYYY-MM-DD), notes, scope, ownerId, createdAt, completed (0 or 1). completed is the requesting student's status, defaulting to 0. Scope and owner are assigned by the server and cannot be changed by PUT. Progress rows contain id, title, students (all registered students), completed (students who marked the class activity complete).
 
+The mobile app sends its saved token to `GET /auth/me` on startup. The response body is the user object. Completion uses an explicit `completed` boolean. A retry with the same value sets the same status for the signed-in student.
+
 Errors use an error string in a JSON object. Statuses: 400 invalid fields or JSON; 401 missing, invalid or expired session; 403 known user lacks permission; 404 missing or invisible activity; 409 duplicate username; 413 oversized request; 500 unexpected failure. Another student's private activity returns 404.
 
 Validation: username uses letters, digits and underscores (maximum 40); name maximum 80; password minimum 6 characters, maximum 72 UTF-8 bytes. Usernames are case-insensitive. Activities require title (maximum 120), course (maximum 100), and a valid calendar date; notes are optional text (maximum 2000). SQL values use placeholders. All activity reads require login.
