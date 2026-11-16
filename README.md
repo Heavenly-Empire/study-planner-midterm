@@ -64,6 +64,23 @@ npm --prefix study-planner-midterm run build
 git diff --check
 ```
 
+## Deploy the web app
+
+Import the repository into Vercel after the Render API responds at `/api/health`. Use `main` as the production branch and `study-planner-midterm` as the root directory.
+
+| Setting | Value |
+| --- | --- |
+| Framework | Vite |
+| Node.js | 24.x |
+| Install command | `npm ci` |
+| Build command | `npm run build -- --base=/` |
+| Output directory | `dist` |
+| Production environment | `VITE_API_URL` set to the Render HTTPS origin without `/api` |
+
+Set `WEB_ORIGIN` on Render to the stable Vercel origin. After both services deploy, sign in on Vercel and check in DevTools that `/api/auth/login` and `/api/activities` go to Render and return 200. Vite reads `VITE_API_URL` during the build, so redeploy the web app after changing it.
+
+For the phone test, use the same Render origin as `EXPO_PUBLIC_API_URL` in `mobile-app/.env.local`. Restart Expo and use cellular data to open an activity created on the hosted web app. See the [phone checks](mobile-app/README.md#phone-checks) for the session and completion tests.
+
 ## Scope
 
 The web app, API, student mobile app and study-plan preview run locally. The GitHub Pages site is the earlier web demo. Backend deployment is scheduled for Week 13. Grading and submissions remain optional. The team keeps the editable diagrams and Design Document in its shared files.
