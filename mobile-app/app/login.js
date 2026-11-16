@@ -38,7 +38,7 @@ export default function LoginScreen() {
           secureTextEntry autoCapitalize="none" editable={!pending} onSubmitEditing={submit} />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         <ActionButton title={pending ? "Signing in..." : "Sign in"} onPress={submit} disabled={pending} />
-        <Text style={styles.muted}>Student accounts only. A restart requires signing in again.</Text>
+        <Text style={styles.muted}>Student accounts only.</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
