@@ -12,9 +12,9 @@ const secret = 'test-only-secret-with-more-than-32-characters'
 test('authentication, ownership, CRUD, completion and persistence', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'planner-test-'))
   const filename = join(dir, 'test.db')
-  let db = openDatabase(filename)
+  let db = await openDatabase(filename)
   const hash = await bcrypt.hash('secret123', 4)
-  db.prepare("INSERT INTO users (username, name, password_hash, role) VALUES ('teacher', 'Teacher', ?, 'administrator')").run(hash)
+  await db.execute({ sql: "INSERT INTO users (username, name, password_hash, role) VALUES ('teacher', 'Teacher', ?, 'administrator')", args: [hash] })
   let server = createApp(db, { secret }).listen(0, '127.0.0.1')
   await new Promise(resolve => server.once('listening', resolve))
   let base = `http://127.0.0.1:${server.address().port}`
@@ -60,12 +60,18 @@ test('authentication, ownership, CRUD, completion and persistence', async (t) =>
     assert.equal((await request('/progress', 'GET', undefined, teacher)).data[0].completed, 1)
     assert.equal((await request('/progress', 'GET', undefined, student)).status, 403)
   })
+  await t.test('repeated completion requests keep a single progress row', async () => {
+    await request(`/activities/${classTask.id}/completion`, 'PATCH', { completed: true }, student)
+    await request(`/activities/${classTask.id}/completion`, 'PATCH', { completed: true }, student)
+    const rows = (await db.execute({ sql: 'SELECT count(*) AS n FROM activity_progress WHERE activity_id = ?', args: [classTask.id] })).rows
+    assert.equal(rows[0].n, 1)
+  })
   await t.test('updates and profile edits persist after reopening the database', async () => {
     const result = await request(`/activities/${privateTask.id}`, 'PUT', { ...privateTask, title: 'Updated plan' }, student)
     assert.equal(result.data.title, 'Updated plan')
     assert.equal((await request('/profile', 'PUT', { name: 'Alice Updated', role: 'administrator' }, student)).data.role, 'client')
     await new Promise(resolve => server.close(resolve)); db.close()
-    db = openDatabase(filename); server = createApp(db, { secret }).listen(0, '127.0.0.1')
+    db = await openDatabase(filename); server = createApp(db, { secret }).listen(0, '127.0.0.1')
     await new Promise(resolve => server.once('listening', resolve)); base = `http://127.0.0.1:${server.address().port}`
     assert.equal((await request(`/activities/${privateTask.id}`, 'GET', undefined, student)).data.title, 'Updated plan')
     assert.equal((await request('/auth/me', 'GET', undefined, student)).data.name, 'Alice Updated')
@@ -73,11 +79,11 @@ test('authentication, ownership, CRUD, completion and persistence', async (t) =>
   })
   await t.test('deletion removes completion records and is absent after reopening', async () => {
     assert.equal((await request(`/activities/${classTask.id}`, 'DELETE', undefined, teacher)).status, 204)
-    assert.equal(db.prepare('SELECT count(*) AS n FROM activity_progress').get().n, 0)
+    assert.equal((await db.execute('SELECT count(*) AS n FROM activity_progress')).rows[0].n, 0)
     assert.equal((await request(`/activities/${privateTask.id}`, 'DELETE', undefined, other)).status, 404)
     assert.equal((await request(`/activities/${privateTask.id}`, 'DELETE', undefined, student)).status, 204)
     await new Promise(resolve => server.close(resolve)); db.close()
-    db = openDatabase(filename); server = createApp(db, { secret }).listen(0, '127.0.0.1')
+    db = await openDatabase(filename); server = createApp(db, { secret }).listen(0, '127.0.0.1')
     await new Promise(resolve => server.once('listening', resolve)); base = `http://127.0.0.1:${server.address().port}`
     assert.deepEqual((await request('/activities', 'GET', undefined, student)).data, [])
   })

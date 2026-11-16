@@ -11,9 +11,15 @@ const publicUser = ({ id, username, name, role }) => ({ id, username, name, role
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.trim().length <= max
 const activityFields = `a.id, a.title, a.course, a.due_date AS dueDate, a.notes, a.scope,
   a.owner_id AS ownerId, a.created_at AS createdAt, COALESCE(p.completed, 0) AS completed`
+const isUniqueViolation = error => /UNIQUE constraint failed/i.test(error?.message ?? '')
 
 export function createApp(db, { secret, origin = 'http://localhost:5173', ai = null, aiTimeoutMs = 15000, aiRateLimit = { max: 5, windowMs: 60000 }, log = console.log }) {
   if (!secret || secret.length < 32) throw new Error('JWT_SECRET must contain at least 32 characters.')
+  // libSQL helpers. Rows are copied to plain objects so JSON output matches the old API.
+  const run = (sql, args = []) => db.execute({ sql, args })
+  const all = async (sql, args = []) => (await run(sql, args)).rows.map(row => ({ ...row }))
+  const get = async (sql, args = []) => (await all(sql, args))[0]
+
   const app = express()
   app.use(cors({ origin }))
   app.use(express.json({ limit: '32kb' }))
@@ -28,10 +34,10 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     const hash = await bcrypt.hash(password, 10)
     try {
       // Public registration always creates a student; the request cannot grant a role.
-      const result = db.prepare("INSERT INTO users (username, name, password_hash, role) VALUES (?, ?, ?, 'client')").run(username.trim(), name.trim(), hash)
-      res.status(201).json(publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid)))
+      const result = await run("INSERT INTO users (username, name, password_hash, role) VALUES (?, ?, ?, 'client')", [username.trim(), name.trim(), hash])
+      res.status(201).json(publicUser(await get('SELECT * FROM users WHERE id = ?', [Number(result.lastInsertRowid)])))
     } catch (error) {
-      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'Username already taken.' })
+      if (isUniqueViolation(error)) return res.status(409).json({ error: 'Username already taken.' })
       throw error
     }
   })
@@ -41,7 +47,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     if (!text(username, 40) || typeof password !== 'string' || !password || Buffer.byteLength(password) > 72) {
       return res.status(400).json({ error: 'Username and password are required.' })
     }
-    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim())
+    const user = await get('SELECT * FROM users WHERE username = ?', [username.trim()])
     // The same response and bcrypt work apply to unknown names and incorrect passwords.
     const hash = user?.password_hash ?? '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
     if (!(await bcrypt.compare(password, hash)) || !user) return res.status(401).json({ error: 'Invalid username or password.' })
@@ -49,30 +55,32 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     res.json({ token, user: publicUser(user) })
   })
 
-  app.use('/api', (req, res, next) => {
+  app.use('/api', async (req, res, next) => {
     const token = req.headers.authorization?.match(/^Bearer (\S+)$/)?.[1]
+    let claims
     try {
       if (!token) throw new Error('Missing token')
-      const claims = jwt.verify(token, secret, { algorithms: ['HS256'] })
-      req.user = db.prepare('SELECT * FROM users WHERE id = ?').get(claims.sub)
-      if (!req.user) throw new Error('Unknown user')
-      next()
+      claims = jwt.verify(token, secret, { algorithms: ['HS256'] })
     } catch {
-      res.status(401).json({ error: 'Please sign in again. Your session is missing or expired.' })
+      return res.status(401).json({ error: 'Please sign in again. Your session is missing or expired.' })
     }
+    // A database fault here is a server error, not an expired session.
+    req.user = await get('SELECT * FROM users WHERE id = ?', [claims.sub])
+    if (!req.user) return res.status(401).json({ error: 'Please sign in again. Your session is missing or expired.' })
+    next()
   })
   app.get('/api/auth/me', (req, res) => res.json(publicUser(req.user)))
-  app.put('/api/profile', (req, res) => {
+  app.put('/api/profile', async (req, res) => {
     if (!text(req.body?.name, 80)) return res.status(400).json({ error: 'Name is required (maximum 80 characters).' })
-    db.prepare('UPDATE users SET name = ? WHERE id = ?').run(req.body.name.trim(), req.user.id)
-    res.json(publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)))
+    await run('UPDATE users SET name = ? WHERE id = ?', [req.body.name.trim(), req.user.id])
+    res.json(publicUser(await get('SELECT * FROM users WHERE id = ?', [req.user.id])))
   })
 
   const canRead = (user, a) => a.scope === 'class' || (user.role === 'client' && a.owner_id === user.id)
   const canManage = (user, a) => (user.role === 'administrator' && a.scope === 'class')
     || (user.role === 'client' && a.scope === 'personal' && a.owner_id === user.id)
-  const readActivity = (id, user) => db.prepare(`SELECT ${activityFields} FROM activities a
-    LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.student_id = ? WHERE a.id = ?`).get(user.id, id)
+  const readActivity = (id, user) => get(`SELECT ${activityFields} FROM activities a
+    LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.student_id = ? WHERE a.id = ?`, [user.id, id])
   function validateActivity(body) {
     if (!text(body?.title, 120) || !text(body?.course, 100)) return 'Title and course are required (maximum 120 and 100 characters).'
     if (typeof body.dueDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.dueDate)
@@ -80,58 +88,58 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     if (body.notes !== undefined && (typeof body.notes !== 'string' || body.notes.length > 2000)) return 'Notes must be text (maximum 2000 characters).'
     return null
   }
-  app.get('/api/activities', (req, res) => {
-    const rows = db.prepare(`SELECT ${activityFields} FROM activities a
+  app.get('/api/activities', async (req, res) => {
+    res.json(await all(`SELECT ${activityFields} FROM activities a
       LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.student_id = ?
       WHERE a.scope = 'class' OR (a.scope = 'personal' AND a.owner_id = ? AND ? = 'client')
-      ORDER BY a.due_date, a.title`).all(req.user.id, req.user.id, req.user.role)
-    res.json(rows)
+      ORDER BY a.due_date, a.title`, [req.user.id, req.user.id, req.user.role]))
   })
-  app.post('/api/activities', (req, res) => {
+  app.post('/api/activities', async (req, res) => {
     const error = validateActivity(req.body)
     if (error) return res.status(400).json({ error })
     const { title, course, dueDate, notes = '' } = req.body
     const scope = req.user.role === 'administrator' ? 'class' : 'personal'
-    const result = db.prepare('INSERT INTO activities (title, course, due_date, notes, scope, owner_id) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(title.trim(), course.trim(), dueDate, notes.trim(), scope, req.user.id)
-    res.status(201).json(readActivity(result.lastInsertRowid, req.user))
+    const result = await run('INSERT INTO activities (title, course, due_date, notes, scope, owner_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [title.trim(), course.trim(), dueDate, notes.trim(), scope, req.user.id])
+    res.status(201).json(await readActivity(Number(result.lastInsertRowid), req.user))
   })
-  app.use('/api/activities/:id', (req, res, next) => {
+  app.use('/api/activities/:id', async (req, res, next) => {
     if (!/^[1-9]\d*$/.test(req.params.id)) return res.status(404).json({ error: 'Activity not found.' })
-    req.activity = db.prepare('SELECT * FROM activities WHERE id = ?').get(req.params.id)
+    req.activity = await get('SELECT * FROM activities WHERE id = ?', [req.params.id])
     if (!req.activity || !canRead(req.user, req.activity)) return res.status(404).json({ error: 'Activity not found.' })
     next()
   })
-  app.get('/api/activities/:id', (req, res) => res.json(readActivity(req.activity.id, req.user)))
-  app.put('/api/activities/:id', (req, res) => {
+  app.get('/api/activities/:id', async (req, res) => res.json(await readActivity(req.activity.id, req.user)))
+  app.put('/api/activities/:id', async (req, res) => {
     if (!canManage(req.user, req.activity)) return res.status(403).json({ error: 'You cannot edit this activity.' })
     const error = validateActivity(req.body)
     if (error) return res.status(400).json({ error })
     const { title, course, dueDate, notes = '' } = req.body
-    db.prepare('UPDATE activities SET title = ?, course = ?, due_date = ?, notes = ? WHERE id = ?')
-      .run(title.trim(), course.trim(), dueDate, notes.trim(), req.activity.id)
-    res.json(readActivity(req.activity.id, req.user))
+    await run('UPDATE activities SET title = ?, course = ?, due_date = ?, notes = ? WHERE id = ?',
+      [title.trim(), course.trim(), dueDate, notes.trim(), req.activity.id])
+    res.json(await readActivity(req.activity.id, req.user))
   })
-  app.delete('/api/activities/:id', (req, res) => {
+  app.delete('/api/activities/:id', async (req, res) => {
     if (!canManage(req.user, req.activity)) return res.status(403).json({ error: 'You cannot delete this activity.' })
-    db.prepare('DELETE FROM activities WHERE id = ?').run(req.activity.id)
+    await run('DELETE FROM activities WHERE id = ?', [req.activity.id])
     res.status(204).end()
   })
-  app.patch('/api/activities/:id/completion', (req, res) => {
+  app.patch('/api/activities/:id/completion', async (req, res) => {
     if (req.user.role !== 'client') return res.status(403).json({ error: 'Completion is recorded by each student.' })
     if (typeof req.body?.completed !== 'boolean') return res.status(400).json({ error: 'completed must be true or false.' })
-    db.prepare(`INSERT INTO activity_progress (activity_id, student_id, completed) VALUES (?, ?, ?)
-      ON CONFLICT(activity_id, student_id) DO UPDATE SET completed = excluded.completed`)
-      .run(req.activity.id, req.user.id, Number(req.body.completed))
-    res.json(readActivity(req.activity.id, req.user))
+    // One statement, so the upsert stays atomic and keeps a single row per student and activity.
+    await run(`INSERT INTO activity_progress (activity_id, student_id, completed) VALUES (?, ?, ?)
+      ON CONFLICT(activity_id, student_id) DO UPDATE SET completed = excluded.completed`,
+      [req.activity.id, req.user.id, Number(req.body.completed)])
+    res.json(await readActivity(req.activity.id, req.user))
   })
-  app.get('/api/progress', (req, res) => {
+  app.get('/api/progress', async (req, res) => {
     if (req.user.role !== 'administrator') return res.status(403).json({ error: 'Lecturer access required.' })
     // Aggregate class completions only; lecturers never receive private task details.
-    res.json(db.prepare(`SELECT a.id, a.title,
+    res.json(await all(`SELECT a.id, a.title,
       (SELECT count(*) FROM users WHERE role = 'client') AS students,
       (SELECT count(*) FROM activity_progress p WHERE p.activity_id = a.id AND p.completed = 1) AS completed
-      FROM activities a WHERE a.scope = 'class' ORDER BY a.due_date`).all())
+      FROM activities a WHERE a.scope = 'class' ORDER BY a.due_date`))
   })
 
   // Limit provider requests per student. Previews stay on the local server.
@@ -142,7 +150,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     if (recent.length >= aiRateLimit.max) { aiHits.set(userId, recent); return true }
     aiHits.set(userId, [...recent, now]); return false
   }
-  function preparePlan(req, res, next) {
+  async function preparePlan(req, res, next) {
     if (req.user.role !== 'client') return res.status(403).json({ error: 'Study plans are for students.' })
     const checked = validatePlanRequest(req.body)
     if (checked.error) return res.status(400).json({ error: checked.error })
@@ -154,14 +162,14 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
     let rows
     if (request.activityIds) {
       const marks = request.activityIds.map(() => '?').join(',')
-      rows = db.prepare(`SELECT ${columns} ${eligible} AND a.id IN (${marks}) ORDER BY a.due_date, a.title, a.id`)
-        .all(req.user.id, req.user.id, ...request.activityIds)
+      rows = await all(`SELECT ${columns} ${eligible} AND a.id IN (${marks}) ORDER BY a.due_date, a.title, a.id`,
+        [req.user.id, req.user.id, ...request.activityIds])
       if (rows.length !== request.activityIds.length) return res.status(404).json({ error: 'Activity not found.' })
       if (rows.some(row => row.completed)) return res.status(400).json({ error: 'Completed activities cannot be planned.' })
       if (textSize(rows) > LIMITS.totalTextChars) return res.status(400).json({ error: `The selected activities have too much text (limit ${LIMITS.totalTextChars} characters). Choose fewer.` })
     } else {
-      rows = db.prepare(`SELECT ${columns} ${eligible} AND COALESCE(p.completed, 0) = 0 ORDER BY a.due_date, a.title, a.id LIMIT 10`)
-        .all(req.user.id, req.user.id)
+      rows = await all(`SELECT ${columns} ${eligible} AND COALESCE(p.completed, 0) = 0 ORDER BY a.due_date, a.title, a.id LIMIT 10`,
+        [req.user.id, req.user.id])
       rows = pickWithinBudget(rows)
     }
     res.set('Cache-Control', 'no-store')
@@ -171,7 +179,7 @@ export function createApp(db, { secret, origin = 'http://localhost:5173', ai = n
 
   app.post('/api/ai/plan-preview', preparePlan, (req, res) => {
     const { request, activities } = req.studyPlan
-    // The preview comes from SQLite. This step ends before any provider call.
+    // The preview comes from the database. This step ends before any provider call.
     res.json({ activities, previewToken: createPreviewToken(secret, req.user.id, request, activities) })
   })
 
