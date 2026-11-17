@@ -31,7 +31,9 @@ function Screens() {
 
   return (
     <>
-      <Stack key={session ? session.user.id : "signed-out"} screenOptions={{ headerTintColor: "#0f766e" }}>
+      <Stack
+        key={session ? session.user.id : "signed-out"}
+        screenOptions={{ headerTintColor: "#0f766e", headerTransparent: false }}>
         <Stack.Screen name="login" options={{ title: "Student sign in", headerBackVisible: false }} />
         <Stack.Screen name="index" options={{ title: "Study Planner", headerBackVisible: false }} />
         <Stack.Screen name="activity/[id]" options={{ title: "Activity" }} />
