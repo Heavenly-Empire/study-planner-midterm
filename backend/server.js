@@ -11,12 +11,20 @@ try {
   console.error(`Study Planner API could not open its database: ${error.message}`)
   process.exit(1)
 }
-const app = createApp(db, { secret: process.env.JWT_SECRET, origin: process.env.WEB_ORIGIN,
-  ai: createAiService({ apiKey: process.env.OPENROUTER_API_KEY, model: process.env.AI_MODEL }) })
+
+// A missing or short JWT_SECRET stops startup with one clear line instead of a stack trace.
+let app
+try {
+  app = createApp(db, { secret: process.env.JWT_SECRET, origin: process.env.WEB_ORIGIN,
+    ai: createAiService({ apiKey: process.env.OPENROUTER_API_KEY, model: process.env.AI_MODEL }) })
+} catch (error) {
+  console.error(`Study Planner API could not start: ${error.message}`)
+  db.close()
+  process.exit(1)
+}
 const host = process.env.HOST || '127.0.0.1'
 const port = Number(process.env.PORT ?? 3000)
 const server = createServer(app)
-
 server.on('listening', () => {
   console.log(`Study Planner API listening on ${host}:${server.address().port}`)
 })

@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { databaseTarget } from './database.js'
 
-function launch(port, databasePath = ':memory:') {
+function launch(port, databasePath = ':memory:', extraEnv = {}) {
   return spawn(process.execPath, [fileURLToPath(new URL('./server.js', import.meta.url))], {
     windowsHide: true,
     env: {
@@ -22,6 +22,7 @@ function launch(port, databasePath = ':memory:') {
       HOST: '127.0.0.1',
       DATABASE_PATH: databasePath,
       JWT_SECRET: 'startup-test-only-secret-at-least-32-characters',
+      ...extraEnv,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -39,6 +40,18 @@ test('startup reports an occupied port without masking the error', { timeout: 60
   const code = await new Promise(resolve => child.once('close', resolve))
   assert.equal(code, 1)
   assert.match(output, /EADDRINUSE/)
+  assert.doesNotMatch(output, /TypeError/)
+})
+
+test('startup stops with a clear message when JWT_SECRET is missing', { timeout: 6000 }, async t => {
+  const child = launch(0, ':memory:', { JWT_SECRET: '' })
+  t.after(() => { if (child.exitCode === null) child.kill() })
+  let output = ''
+  child.stdout.on('data', chunk => { output += chunk })
+  child.stderr.on('data', chunk => { output += chunk })
+  const code = await new Promise(resolve => child.once('close', resolve))
+  assert.equal(code, 1)
+  assert.match(output, /JWT_SECRET must contain at least 32 characters/)
   assert.doesNotMatch(output, /TypeError/)
 })
 
