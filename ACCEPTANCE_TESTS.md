@@ -73,3 +73,20 @@ The results below cover the review branch and the live checks on 12 and 13 Novem
 | Live OpenRouter result | Passed on 12 November. Nemotron 3.5 Lightning (free) returned a study plan, and the OpenRouter log showed $0.00. |
 | Android account check | Passed on 13 November. Hifa verified personal activity privacy and separate completion for each student. See `docs/HANDOFF_RECORD.md`. |
 | Explain the flow | Pending. Each member explains prompts, token limits, temperature, validation, the server-only key and why the app returns one JSON response. |
+
+## Week 13 web QA
+
+Hifa ran these checks on 17 November 2026 with a fresh local SQLite database and the seeded demo accounts. The baseline was `7abd273`. The mobile navigation fix was tested at `2415bbb`. Browser checks used Chrome 157.0.8103.51 at 1280 × 900 and 375 × 812, with an additional navigation check at 393 × 852.
+
+| Check | Result |
+| --- | --- |
+| Installation, automated checks, and startup | `npm ci` completed for the API and web app. The backend passed 38 tests. The web app passed 18 tests, `npm run lint`, and `npm run build -- --base=/`. `npm run dev -- --port 5173 --strictPort` started the site at `http://localhost:5173/study-planner-midterm/`. |
+| Sign-in and role switching | Passed at both widths. A wrong password displayed an inline error. The lecturer and student could each sign in and sign out. |
+| Lecturer dashboard and activity form | Passed at both widths. The lecturer created a class activity and saw its count change from 0 of 1 students to 1 of 1 after the student marked it complete. The dashboard listed class activities. |
+| Student dashboard and personal activity form | Passed at both widths. The student saw the class activity, marked it complete, and created a personal activity. The saved result showed `Personal (only you)`. The lecturer's list excluded that activity. Both activity forms showed field-level messages on a blank submission. |
+| Study-plan review | Passed at both widths. The preview showed the selected title and notes. The student had to confirm before generating. Editing the daily minutes cleared the preview and required a new review. With OpenRouter unconfigured, generation returned `503` and showed the setup message from Marcello's report. Live generation is part of the Render check. |
+| Responsive layout | Passed after the fix. Login, dashboards, forms, and study-plan controls fit at 1280 and 375 px. The long-name case passed at both 375 and 393 px. |
+
+To reproduce the navigation issue on the baseline, sign in as a student, open **Profile**, and save an 80-character name without spaces. At 375 px, the page widened to 1,078 px and the navigation and Logout control extended past the viewport. The expected behavior is for the name to wrap and keep the controls in view. After the fix, the name wrapped and the navigation fit at 375 and 393 px.
+
+The local captures in `docs/week13-web-evidence/` show the inline sign-in error, the 375 px study-plan review, the lecturer's class progress, and the 393 px navigation before and after the fix.
