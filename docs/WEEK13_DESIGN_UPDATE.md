@@ -52,7 +52,7 @@ Marcello's iPhone report showed content hidden under the navigation header. Hifa
 
 ## Hosted results
 
-Hifa performed the hosted API, web and Android checks. Marcello supplied the iPhone Expo Go report.
+Hifa performed the hosted API, web and Android checks. Marcello supplied the iPhone Expo Go report. The [Week 13 progress record](../PROGRESS.md) credits the team's work and links to the pull requests.
 
 | Check | Result | Local evidence file |
 | --- | --- | --- |
