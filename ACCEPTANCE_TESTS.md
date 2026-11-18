@@ -1,4 +1,6 @@
-# Acceptance checks for the proposed update
+# Acceptance checks
+
+The early checklist covers the proposed grading extension. Actual Week 13 results are recorded under [web QA](#week-13-web-qa) and [hosted deployment](#week-13-hosted-deployment).
 
 Record actual result, tester, date and evidence next to each check. Not run means Not run. Use synthetic test accounts and a temporary database, not real student grades.
 
@@ -90,3 +92,23 @@ Hifa ran these checks on 17 November 2026 with a fresh local SQLite database and
 To reproduce the navigation issue on the baseline, sign in as a student, open **Profile**, and save an 80-character name without spaces. At 375 px, the page widened to 1,078 px and the navigation and Logout control extended past the viewport. The expected behavior is for the name to wrap and keep the controls in view. After the fix, the name wrapped and the navigation fit at 375 and 393 px.
 
 The local captures in `docs/week13-web-evidence/` show the inline sign-in error, the 375 px study-plan review, the lecturer's class progress, and the 393 px navigation before and after the fix.
+
+## Week 13 hosted deployment
+
+Hifa ran the hosted checks on 17 November 2026. The production captures identify `458e620` on `main`. The iPhone header fix subsequently merged as `1ed86d4` through PR #6.
+
+| Check | Recorded result |
+| --- | --- |
+| Public health | `GET https://study-planner-week13-api.onrender.com/api/health` returned `200` with `{"status":"ok"}`. |
+| Hosted authentication and data | Student sign-in and activity loading returned `200`. Activities without a Bearer token returned `401`. |
+| Vercel connection | The production website at `https://study-planner-midterm.vercel.app` signed in and loaded activities. The API allowed that origin. |
+| Android on cellular | Student A completed the web-created class activity 4 on Android 16 over 4G+ at 13:39 WIB. Refreshing Vercel showed the saved status. |
+| Two-account visibility | Student B saw activity 4 as incomplete and could not see Student A's personal task. The lecturer progress response showed 1 of 2 completed. |
+| Render restart | The Events view records a 13:45 WIB restart. The same activity and completion were present on Android at 13:49 WIB and on Vercel. |
+| Live AI | Student B generated a three-day plan from the preview and confirmation flow. OpenRouter logged Nemotron 3.5 Lightning (free) at $0.00. |
+| AI role checks | Both AI endpoints returned `403` for the lecturer. |
+| iPhone walkthrough | Marcello's Expo Go Wi-Fi report shows the two accounts and separate completion. Hifa fixed the reported header overlap in PR #6. |
+
+The iPhone cellular, session reopen and failed-save retry results remain unverified. Hosted AI failure-and-retry evidence is unrecorded. Earlier acceptance checks cover readable provider failures with a test provider.
+
+See [PROGRESS.md](PROGRESS.md) for ownership and [the Week 13 design update](docs/WEEK13_DESIGN_UPDATE.md) for the API and evidence record.

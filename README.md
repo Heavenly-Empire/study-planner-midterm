@@ -1,6 +1,15 @@
 # Study Planner - Group 10
 
-Study Planner has three parts that share one API and one SQLite database: a React web app, an Express API, and an Expo student mobile app. Week 12 added the mobile app (pushed to main) and the student study-plan preview (AI).
+Study Planner has a React web app, an Express API and an Expo student mobile app. The hosted API uses Turso; local development uses SQLite. Students can request an AI study plan from the web dashboard.
+
+## Hosted demo
+
+- [Web application](https://study-planner-midterm.vercel.app)
+- [API health](https://study-planner-week13-api.onrender.com/api/health)
+- [Week 13 progress and contributions](PROGRESS.md)
+- [Week 13 design update](docs/WEEK13_DESIGN_UPDATE.md)
+
+To try the hosted app as a student, select **Create student account** on the web sign-in page. For the shared demo accounts (`student`, `student_b` and `lecturer`), ask Hifa privately for the current passwords.
 
 ## Get the code
 
@@ -23,7 +32,7 @@ npm run seed
 npm start
 ```
 
-Seeded demo accounts (local only): lecturer / demo123 and student / demo123. Seeding again keeps existing work. On Windows, if the default npm cache fails, use `npm ci --cache .npm-cache` and keep that folder out of Git.
+Seeding again keeps existing work. On Windows, if the default npm cache fails, use `npm ci --cache .npm-cache` and keep that folder out of Git.
 
 ### AI study plan
 
@@ -41,6 +50,16 @@ npm run dev -- --port 5173 --strictPort
 ```
 
 Open the URL Vite prints, with the /study-planner-midterm/ path. Students see a "Study plan assistant" card on the dashboard.
+
+### Local demo accounts
+
+| Account | Username | Password | Setup |
+| --- | --- | --- | --- |
+| Lecturer | `lecturer` | `demo123` | Created by `npm run seed` |
+| Student 1 | `student` | `demo123` | Created by `npm run seed` |
+| Student 2 | `student_b` | `demo123` | Register in the local web app |
+
+To add Student 2, select **Create student account**, enter `Demo Student B` as the name and use the username and password above. Select **Create account**, then sign in as `student_b`.
 
 ## Start the phone app
 
@@ -81,6 +100,19 @@ Set `WEB_ORIGIN` on Render to the stable Vercel origin. After both services depl
 
 For the phone test, use the same Render origin as `EXPO_PUBLIC_API_URL` in `mobile-app/.env.local`. Restart Expo and use cellular data to open an activity created on the hosted web app. See the [phone checks](mobile-app/README.md#phone-checks) for the session and completion tests.
 
+## Week 13 contributions
+
+| Contributor | Work |
+| --- | --- |
+| [Hifa (Heavenly-Empire)](https://github.com/Heavenly-Empire) | Improved the mobile app and followed up on the Turso migration by validating hosted database URLs, fixing Windows database paths, and handling activities deleted during a request. Set up and verified hosted Turso, reviewed Nurullah's startup changes, and deployed Render and Vercel. Reran Marcello's web QA, fixed the web navigation overflow and the iPhone header overlap he reported, verified Android 16 and the hosted AI flow, and prepared the design update and evidence. |
+| [Nurullah (N3can)](https://github.com/N3can) | Prepared backend startup for Render, including startup without a local `.env` and a clear error for an invalid JWT signing secret. He also built the original AI study plan generator in Week 12. |
+| [Naraga (RenSatoru)](https://github.com/RenSatoru) | Converted the backend database layer to libSQL for Turso and ran the initial backend checks. |
+| Marcello Immanuel Litano | Ran the initial local web QA, documented the two-student Expo Go walkthrough on iPhone over Wi-Fi, and reported the navigation header overlap. |
+
+In Week 12, Hifa updated Nurullah's AI study plan generator to require student confirmation before sending activity details to OpenRouter, enforce zero-cost routing, and improve the suggested sessions and overdue warnings. [PR #1](https://github.com/Heavenly-Empire/study-planner-midterm/pull/1)
+
+See the [Week 13 progress record](PROGRESS.md) for pull requests and verification results.
+
 ## Scope
 
-The web app, API, student mobile app and study-plan preview run locally. The GitHub Pages site is the earlier web demo. Backend deployment is scheduled for Week 13. Grading and submissions remain optional. The team keeps the editable diagrams and Design Document in its shared files.
+The web app runs on Vercel and the API runs on Render with Turso storage. Expo Go uses the same hosted API for student workflows. The team verified shared activity progress on Android over cellular, web synchronization, restart persistence and a $0.00 OpenRouter generation. Marcello supplied the iPhone Wi-Fi walkthrough. The current evidence status is recorded in PROGRESS.md. Grading and submissions remain optional.
