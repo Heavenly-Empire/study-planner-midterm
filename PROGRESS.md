@@ -45,12 +45,3 @@ Naraga reported 34 passing backend tests for the initial database conversion. Hi
 On 16 November at 23:39 WIB, Hifa verified PR #2 at `78fc720` against the dedicated Singapore Turso database. A repeated seed preserved existing rows. Both demo students could sign in. Re-registering the second username returned `409`. Repeated completion for class activity 1 kept one progress row. Student B received `404` for Student A's personal activity 3, and deleting that test activity removed its progress row.
 
 Hifa verified PR #5 with 39 passing backend tests. Web QA at `2415bbb` passed 18 web tests, lint and the production build. These counts belong to their recorded revisions.
-
-## Evidence still to record
-
-- iPhone cellular, session and failed-save retry results.
-- A hosted AI failure-and-retry result. Provider failure cases passed earlier with a test provider.
-- A browser Network capture showing the full Render request URL alongside the status.
-- The completed team demo rehearsal.
-
-The Android record uses Android 16 and omits the phone model at Hifa's request.
