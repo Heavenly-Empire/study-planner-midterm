@@ -4,7 +4,7 @@ Group 10 | 13 November 2026
 
 For the deployed Week 13 results, see [the current progress tracker](../PROGRESS.md) and [design update](WEEK13_DESIGN_UPDATE.md). This record covers the earlier local handoff.
 
-The review branch adds a preview before students send activity details to OpenRouter. The server verifies that the model and provider route are free. The updated plan gives students specific study tasks, groups sessions by day, and flags deadlines that have already passed.
+Nurullah built the original AI study plan generator. In [PR #1](https://github.com/Heavenly-Empire/study-planner-midterm/pull/1), Hifa added a required preview and confirmation before students send activity details to OpenRouter. Hifa also added checks for zero-cost routing and updated the plan to give students specific study tasks, group sessions by day and flag deadlines that have already passed.
 
 ## Automated checks
 

@@ -109,6 +109,8 @@ For the phone test, use the same Render origin as `EXPO_PUBLIC_API_URL` in `mobi
 | [Naraga (RenSatoru)](https://github.com/RenSatoru) | Converted the backend database layer to libSQL for Turso and ran the initial backend checks. |
 | Marcello Immanuel Litano | Ran the initial local web QA, documented the two-student Expo Go walkthrough on iPhone over Wi-Fi, and reported the navigation header overlap. |
 
+In Week 12, Hifa updated Nurullah's AI study plan generator to require student confirmation before sending activity details to OpenRouter, enforce zero-cost routing, and improve the suggested sessions and overdue warnings. [PR #1](https://github.com/Heavenly-Empire/study-planner-midterm/pull/1)
+
 See the [Week 13 progress record](PROGRESS.md) for pull requests and verification results.
 
 ## Scope
