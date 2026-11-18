@@ -1,5 +1,7 @@
 # Week 12 task tracker
 
+The current deployment and contribution record is [Week 13 progress](PROGRESS.md). This page records the Week 12 plan and optional extensions.
+
 Use this table to track the work and the evidence. Add an owner when the team assigns one.
 
 | Task | Suggested owner | Dependency | Deliverable and completion gate | Actual owner / status |

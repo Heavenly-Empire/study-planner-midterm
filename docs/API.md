@@ -1,6 +1,6 @@
 # API reference
 
-Base URL: http://localhost:3000/api. JSON bodies. Protected requests use Authorization: Bearer <token>. User responses contain id, username, name and role, never password hashes.
+Production base URL: https://study-planner-week13-api.onrender.com/api. Local base URL: http://localhost:3000/api. JSON bodies. Protected requests use Authorization: Bearer <token>. User responses contain id, username, name and role, never password hashes.
 
 | Method | Path | Access | Request | Response |
 | --- | --- | --- | --- | --- |
@@ -33,11 +33,11 @@ POST /activities example (illustration, not test output):
 {"title":"Review JWT middleware","course":"Web Development","dueDate":"2026-10-29","notes":"Trace a protected request."}
 ```
 
-The server responds with the saved activity. A lecturer receives class scope; a student receives personal scope. IDs and creation timestamps come from SQLite. Submitted roles and ownership values cannot grant permissions.
+The server responds with the saved activity. A lecturer receives class scope; a student receives personal scope. IDs and creation timestamps come from the configured database. Submitted roles and ownership values cannot grant permissions.
 
 ## Review and generate a study plan
 
-Both routes require a student session. Start with `/ai/plan-preview` to see the exact activity text and receive a token valid for five minutes. This request uses SQLite. After the student confirms the text, send the same choices to `/ai/generate-plan` with `confirmed: true` and the `previewToken`. The server checks the token against the student's account, planning choices and current text. The plan stays in the web preview.
+Both routes require a student session. Start with `/ai/plan-preview` to see the exact activity text and receive a token valid for five minutes. The preview reads the configured database: Turso in the deployed API or SQLite locally. After the student confirms the text, send the same choices to `/ai/generate-plan` with `confirmed: true` and the `previewToken`. The server checks the token against the student's account, planning choices and current text. The plan stays in the web preview.
 
 Request: startDate and endDate (real dates, YYYY-MM-DD, end not before start, at most 7 days), dailyMinutes (whole number, 15 to 240), optional activityIds (1 to 10 different positive integers). Without activityIds the server picks up to 10 unfinished activities (class work and the student's own private tasks) in due-date order.
 
@@ -67,4 +67,4 @@ The server checks the JSON, dates, activity IDs, daily minutes and text length. 
 | 503 | OPENROUTER_API_KEY or AI_MODEL missing, or the model is not a verified zero-price model |
 | 504 | The provider did not answer within 15 seconds |
 
-Set `OPENROUTER_API_KEY` and `AI_MODEL` in `backend/.env`. Before each generation attempt, the server checks the model catalogue for explicit zero input and output prices. The request also sets a zero limit for input, output and per-request charges. Provider fallback and SDK retries are disabled.
+Configure `OPENROUTER_API_KEY` and `AI_MODEL` in the Render environment for the hosted API, or in `backend/.env` locally. Before each generation attempt, the server checks the model catalogue for explicit zero input and output prices. The request also sets a zero limit for input, output and per-request charges. Provider fallback and SDK retries are disabled.

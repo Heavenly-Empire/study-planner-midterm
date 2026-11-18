@@ -2,6 +2,8 @@
 
 Group 10 | 13 November 2026
 
+For the deployed Week 13 results, see [the current progress tracker](../PROGRESS.md) and [design update](WEEK13_DESIGN_UPDATE.md). This record covers the earlier local handoff.
+
 The review branch adds a preview before students send activity details to OpenRouter. The server verifies that the model and provider route are free. The updated plan gives students specific study tasks, groups sessions by day, and flags deadlines that have already passed.
 
 ## Automated checks

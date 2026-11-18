@@ -1,6 +1,15 @@
 # Study Planner - Group 10
 
-Study Planner has three parts that share one API and one SQLite database: a React web app, an Express API, and an Expo student mobile app. Week 12 added the mobile app (pushed to main) and the student study-plan preview (AI).
+Study Planner has a React web app, an Express API and an Expo student mobile app. The hosted API uses Turso; local development uses SQLite. Students can request an AI study plan from the web dashboard.
+
+## Hosted demo
+
+- [Web application](https://study-planner-midterm.vercel.app)
+- [API health](https://study-planner-week13-api.onrender.com/api/health)
+- [Week 13 progress and contributions](PROGRESS.md)
+- [Week 13 design update](docs/WEEK13_DESIGN_UPDATE.md)
+
+Use the team's privately shared demo credentials for the hosted app. The credentials below apply to the local seed.
 
 ## Get the code
 
@@ -83,4 +92,4 @@ For the phone test, use the same Render origin as `EXPO_PUBLIC_API_URL` in `mobi
 
 ## Scope
 
-The web app, API, student mobile app and study-plan preview run locally. The GitHub Pages site is the earlier web demo. Backend deployment is scheduled for Week 13. Grading and submissions remain optional. The team keeps the editable diagrams and Design Document in its shared files.
+The web app runs on Vercel and the API runs on Render with Turso storage. Expo Go uses the same hosted API for student workflows. The team verified shared activity progress on Android over cellular, web synchronization, restart persistence and a $0.00 OpenRouter generation. Marcello supplied the iPhone Wi-Fi walkthrough. The current evidence status is recorded in PROGRESS.md. Grading and submissions remain optional.

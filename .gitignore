@@ -11,3 +11,4 @@ coverage/
 docs/*
 !docs/API.md
 !docs/HANDOFF_RECORD.md
+!docs/WEEK13_DESIGN_UPDATE.md
