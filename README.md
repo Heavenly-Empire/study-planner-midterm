@@ -104,7 +104,7 @@ For the phone test, use the same Render origin as `EXPO_PUBLIC_API_URL` in `mobi
 
 | Contributor | Work |
 | --- | --- |
-| [Hifa (Heavenly-Empire)](https://github.com/Heavenly-Empire) | Improved the mobile app, provisioned and verified the hosted Turso database, and deployed Render and Vercel. Repeated the web QA, fixed the web navigation overflow and iPhone header overlap, verified Android 16 and the hosted AI flow, and prepared the design update and evidence. |
+| [Hifa (Heavenly-Empire)](https://github.com/Heavenly-Empire) | Improved the mobile app and followed up on the Turso migration by validating hosted database URLs, fixing Windows database paths, and handling activities deleted during a request. Set up and verified hosted Turso, reviewed Nurullah's startup changes, and deployed Render and Vercel. Reran Marcello's web QA, fixed the web navigation overflow and the iPhone header overlap he reported, verified Android 16 and the hosted AI flow, and prepared the design update and evidence. |
 | [Nurullah (N3can)](https://github.com/N3can) | Prepared backend startup for Render, including startup without a local `.env` and a clear error for an invalid JWT signing secret. He also built the original AI study plan generator in Week 12. |
 | [Naraga (RenSatoru)](https://github.com/RenSatoru) | Converted the backend database layer to libSQL for Turso and ran the initial backend checks. |
 | Marcello Immanuel Litano | Ran the initial local web QA, documented the two-student Expo Go walkthrough on iPhone over Wi-Fi, and reported the navigation header overlap. |
